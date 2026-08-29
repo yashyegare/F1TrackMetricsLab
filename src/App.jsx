@@ -63,6 +63,98 @@ const SORT_OPTIONS = [
 
 const CONTINENTS = ['All', 'Europe', 'Asia', 'North America', 'South America', 'Africa', 'Oceania'];
 
+// --- Similar tracks algorithm ------------------------------------------------
+
+function findSimilarTracks(circuit, all, count = 4) {
+  if (!circuit) return [];
+  const scored = all
+    .filter(c => c.id !== circuit.id)
+    .map(c => {
+      // Score based on length similarity, corner count (approx from coords), direction
+      const lengthScore = 1 - Math.min(Math.abs((c.length ?? 0) - (circuit.length ?? 0)) / Math.max(circuit.length ?? 1, 1), 1);
+      const coordScore = 1 - Math.min(Math.abs((c.coordinates?.length ?? 0) - (c.coordinates?.length ?? 0)) / Math.max(circuit.coordinates?.length ?? 1, 1), 1);
+      const altitudeScore = c.continent === circuit.continent ? 0.2 : 0;
+      const total = lengthScore * 0.5 + coordScore * 0.3 + altitudeScore;
+      return { circuit: c, score: total };
+    })
+    .sort((a, b) => b.score - a.score);
+  return scored.slice(0, count).map(s => s.circuit);
+}
+
+// --- Track history mini-timeline ---------------------------------------------
+
+function TrackHistory({ history }) {
+  if (!history || !history.yearsHosted?.length) return null;
+  const years = history.yearsHosted;
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
+  // Find gaps (years not hosted)
+  const hostedSet = new Set(years);
+  const gaps = [];
+  for (let y = minYear; y <= maxYear; y++) {
+    if (!hostedSet.has(y)) gaps.push(y);
+  }
+  return (
+    <div className="track-history">
+      <div className="history-bar">
+        {Array.from({ length: maxYear - minYear + 1 }, (_, i) => {
+          const y = minYear + i;
+          const hosted = hostedSet.has(y);
+          return <div key={y} className={`history-dot${hosted ? ' active' : ''}`} title={y} />;
+        })}
+      </div>
+      <span className="history-range">{minYear}–{maxYear} · {years.length} GPs</span>
+      {history.layoutChanges && <p className="layout-changes">{history.layoutChanges}</p>}
+    </div>
+  );
+}
+
+// --- Info panel (map mode) ---------------------------------------------------
+
+function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
+  const [expanded, setExpanded] = useState(false);
+  const similar = useMemo(() => findSimilarTracks(circuit, allCircuits), [circuit, allCircuits]);
+  return (
+    <div className={`info-panel${expanded ? ' expanded' : ''}`}>
+      <button className="info-toggle" onClick={() => setExpanded(e => !e)}>
+        <span className="info-toggle-name">{circuit.name}</span>
+        <span className="info-toggle-chevron">{expanded ? '▾' : '▸'}</span>
+      </button>
+      {expanded && (
+        <div className="info-body">
+          <div className="info-grid">
+            <div><span className="label">Location</span><span className="value">{circuit.location}</span></div>
+            <div><span className="label">Length</span><span className="value">{formatLength(circuit.length, unit)}</span></div>
+            <div><span className="label">Opened</span><span className="value">{circuit.opened ?? '—'}</span></div>
+            <div><span className="label">First GP</span><span className="value">{circuit.firstgp ?? '—'}</span></div>
+            <div><span className="label">Altitude</span><span className="value">{formatAltitude(circuit.altitude, unit)}</span></div>
+            {circuit.drsZones > 0 && <div><span className="label">DRS Zones</span><span className="value">{circuit.drsZones}</span></div>}
+            {circuit.lapRecord && (
+              <div className="lap-record-row">
+                <span className="label">Lap Record</span>
+                <span className="value lap-record">{circuit.lapRecord.time} <span className="record-driver">{circuit.lapRecord.driver}</span> ({circuit.lapRecord.year})</span>
+              </div>
+            )}
+          </div>
+          <TrackHistory history={circuit.trackHistory} />
+          {similar.length > 0 && (
+            <div className="similar-tracks">
+              <span className="similar-label">Similar tracks</span>
+              <div className="similar-list">
+                {similar.map(c => (
+                  <button key={c.id} className="similar-btn" onClick={() => onSelect(c.id)}>
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Fly the map to the selected circuit whenever it changes.
 function FlyToCircuit({ circuit }) {
   const map = useMap();
@@ -289,16 +381,7 @@ export default function App() {
               <button className={basemap === 'satellite' ? 'active' : ''} onClick={() => setBasemap('satellite')}>Satellite</button>
             </div>
             {selected && (
-              <div className="info-panel">
-                <h2>{selected.name}</h2>
-                <div className="info-grid">
-                  <div><span className="label">Location</span><span className="value">{selected.location}</span></div>
-                  <div><span className="label">Length</span><span className="value">{formatLength(selected.length, unit)}</span></div>
-                  <div><span className="label">Opened</span><span className="value">{selected.opened ?? '—'}</span></div>
-                  <div><span className="label">First GP</span><span className="value">{selected.firstgp ?? '—'}</span></div>
-                  <div><span className="label">Altitude</span><span className="value">{formatAltitude(selected.altitude, unit)}</span></div>
-                </div>
-              </div>
+              <InfoPanel circuit={selected} unit={unit} allCircuits={circuits} onSelect={setSelectedId} />
             )}
           </>
         ) : mode === 'compare' ? (

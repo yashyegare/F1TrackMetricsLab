@@ -696,7 +696,30 @@
         30.13176
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Charles Leclerc",
+      "time": "1:36.169",
+      "year": 2019
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Original layout unchanged since opening"
+    }
   },
   {
     "id": "az-2016",
@@ -1055,7 +1078,26 @@
         40.372688
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Charles Leclerc",
+      "time": "1:43.009",
+      "year": 2023
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Modified castle section entry; minor tweaks since"
+    }
   },
   {
     "id": "es-1991",
@@ -1670,7 +1712,52 @@
         41.570034
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Max Verstappen",
+      "time": "1:16.330",
+      "year": 2024
+    },
+    "drsZones": 4,
+    "trackHistory": {
+      "yearsHosted": [
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Final chicane removed 2023, returning to pre-2007 layout"
+    }
   },
   {
     "id": "hu-1986",
@@ -2249,7 +2336,57 @@
         47.58026
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:16.627",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Turn 2-3 modified 2003; minor kerb changes over years"
+    }
   },
   {
     "id": "ar-1952",
@@ -2624,7 +2761,36 @@
         -34.694048
       ]
     ],
-    "continent": "South America"
+    "continent": "South America",
+    "lapRecord": {
+      "driver": "Juan Manuel Fangio",
+      "time": "1:42.1",
+      "year": 1954
+    },
+    "drsZones": 0,
+    "trackHistory": {
+      "yearsHosted": [
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1960,
+        1974,
+        1975,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1995,
+        1996,
+        1997,
+        1998
+      ],
+      "layoutChanges": "Multiple layout variants over decades; current is No.8 configuration"
+    }
   },
   {
     "id": "us-1956",
@@ -2983,7 +3149,39 @@
         42.341046
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:22.060",
+      "year": 2024
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981
+      ],
+      "layoutChanges": "Restored to original long-course layout for 2024 return"
+    }
   },
   {
     "id": "pt-1972",
@@ -3330,7 +3528,44 @@
         38.749017
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Rubens Barrichello",
+      "time": "1:32.206",
+      "year": 2004
+    },
+    "drsZones": 1,
+    "trackHistory": {
+      "yearsHosted": [
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009
+      ],
+      "layoutChanges": "Original layout largely unchanged; last GP 2009"
+    }
   },
   {
     "id": "de-1932",
@@ -3821,7 +4056,64 @@
         49.327768
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Daniel Ricciardo",
+      "time": "1:13.780",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2004,
+        2005,
+        2006,
+        2008,
+        2010,
+        2012,
+        2014,
+        2016,
+        2018,
+        2019,
+        2020,
+        2022,
+        2024
+      ],
+      "layoutChanges": "Major redesign 2002: removed long Parabolika forest section, added Mercedes Arena complex"
+    }
   },
   {
     "id": "it-1953",
@@ -4172,7 +4464,93 @@
         44.344056
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:15.484",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Tosa hairpin modified 1995; Rivazza kerbs updated 2000s"
+    }
   },
   {
     "id": "us-1909",
@@ -4691,7 +5069,76 @@
         39.793155
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Rubens Barrichello",
+      "time": "1:10.895",
+      "year": 2004
+    },
+    "drsZones": 1,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007
+      ],
+      "layoutChanges": "Classic oval road course; F1 used the 2.5mi oval layout"
+    }
   },
   {
     "id": "tr-2005",
@@ -5046,7 +5493,27 @@
         40.952131
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Juan Pablo Montoya",
+      "time": "1:24.770",
+      "year": 2005
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2020,
+        2021
+      ],
+      "layoutChanges": "Turn 1-4 redesigned 2020; originally used separate course layout"
+    }
   },
   {
     "id": "br-1977",
@@ -5433,7 +5900,63 @@
         -22.97485
       ]
     ],
-    "continent": "South America"
+    "continent": "South America",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:10.540",
+      "year": 2018
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1978,
+        1979,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Original Interlagos layout; chicane added at Senna S 1990s"
+    }
   },
   {
     "id": "sa-2021",
@@ -6056,7 +6579,22 @@
         21.631053
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:30.734",
+      "year": 2021
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Street circuit; first F1 race 2021"
+    }
   },
   {
     "id": "za-1961",
@@ -6415,7 +6953,47 @@
         -25.998779
       ]
     ],
-    "continent": "Africa"
+    "continent": "Africa",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:20.359",
+      "year": 2018
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1962,
+        1963,
+        1964,
+        1965,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1992,
+        1993,
+        1994,
+        1995,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Full GP circuit; short track used 1961; returned 2023 after absence"
+    }
   },
   {
     "id": "us-2023",
@@ -6830,7 +7408,20 @@
         36.109904
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Oscar Piastri",
+      "time": "1:35.490",
+      "year": 2023
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2023,
+        2024
+      ],
+      "layoutChanges": "New street circuit on the Las Vegas Strip; first race 2023"
+    }
   },
   {
     "id": "fr-1969",
@@ -7657,7 +8248,61 @@
         43.25202
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Michael Schumacher",
+      "time": "1:13.070",
+      "year": 2004
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2010,
+        2018,
+        2019,
+        2021,
+        2022
+      ],
+      "layoutChanges": "Multiple configuration changes; Mistral chicane added/removed over years"
+    }
   },
   {
     "id": "qa-2004",
@@ -8100,7 +8745,39 @@
         25.489077
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Pedro de la Rosa",
+      "time": "1:33.431",
+      "year": 2005
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Turn 2-3 tight section modified; track resurfaced multiple times"
+    }
   },
   {
     "id": "es-2026",
@@ -8579,7 +9256,13 @@
         40.465178
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": null,
+    "drsZones": 0,
+    "trackHistory": {
+      "yearsHosted": [],
+      "layoutChanges": "New Madrid circuit under construction; first GP planned 2026"
+    }
   },
   {
     "id": "fr-1960",
@@ -8974,7 +9657,62 @@
         46.864076
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Nico Rosberg",
+      "time": "1:32.420",
+      "year": 2018
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2010,
+        2018,
+        2019,
+        2021,
+        2022
+      ],
+      "layoutChanges": "Signes corner high-speed; DRS zone through Mistral straight"
+    }
   },
   {
     "id": "au-1953",
@@ -9573,7 +10311,77 @@
         -37.849757
       ]
     ],
-    "continent": "Oceania"
+    "continent": "Oceania",
+    "lapRecord": {
+      "driver": "Charles Leclerc",
+      "time": "1:19.813",
+      "year": 2024
+    },
+    "drsZones": 4,
+    "trackHistory": {
+      "yearsHosted": [
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "layoutChanges": "Albert Park from 1996; original Princes Park course pre-1996"
+    }
   },
   {
     "id": "mx-1962",
@@ -9992,7 +10800,48 @@
         19.406226
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:17.774",
+      "year": 2021
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992
+      ],
+      "layoutChanges": "Foro Sol stadium section added 2015; layout shortened from original"
+    }
   },
   {
     "id": "us-2022",
@@ -10419,7 +11268,21 @@
         25.959092
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Max Verstappen",
+      "time": "1:29.708",
+      "year": 2023
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Miami International Autodrome; street-style circuit around Hard Rock Stadium"
+    }
   },
   {
     "id": "mc-1929",
@@ -11074,7 +11937,88 @@
         43.739404
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:12.909",
+      "year": 2021
+    },
+    "drsZones": 1,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Iconic street circuit; Fairmont Hairpin (Loews) since 1929; pit lane added 2004"
+    }
   },
   {
     "id": "ca-1978",
@@ -11497,7 +12441,63 @@
         45.501816
       ]
     ],
-    "continent": "North America"
+    "continent": "North America",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:13.078",
+      "year": 2019
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Wall of Champions at final chicane; pit entry modified 2002"
+    }
   },
   {
     "id": "it-1922",
@@ -12012,7 +13012,93 @@
         45.618975
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Rubens Barrichello",
+      "time": "1:21.046",
+      "year": 2004
+    },
+    "drsZones": 1,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Temple of Speed; Ascari chicane 1972; Parabolica unchanged since 1961"
+    }
   },
   {
     "id": "de-1927",
@@ -12559,7 +13645,73 @@
         50.335537
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Michael Schumacher",
+      "time": "1:29.468",
+      "year": 2004
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1951,
+        1952,
+        1953,
+        1954,
+        1956,
+        1957,
+        1958,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1968,
+        1969,
+        1971,
+        1972,
+        1973,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1993,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013
+      ],
+      "layoutChanges": "Nordschleife + GP circuit combined until 1976; GP-only from 1977; modernized 2002"
+    }
   },
   {
     "id": "pt-2008",
@@ -12978,7 +14130,31 @@
         37.232113
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:16.466",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021
+      ],
+      "layoutChanges": "Undulating Algarve circuit; unchanged since opening 2008"
+    }
   },
   {
     "id": "bh-2002",
@@ -13369,7 +14545,38 @@
         26.031766
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Pedro de la Rosa",
+      "time": "1:30.252",
+      "year": 2005
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Endurance layout used 2010; outer circuit trialed; current is standard GP layout"
+    }
   },
   {
     "id": "br-1940",
@@ -14068,7 +15275,68 @@
         -23.703744
       ]
     ],
-    "continent": "South America"
+    "continent": "South America",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:10.540",
+      "year": 2018
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Interlagos (Long); Senna S added 1990; track resurfaced 2023"
+    }
   },
   {
     "id": "it-1914",
@@ -14599,7 +15867,93 @@
         43.997589
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:15.144",
+      "year": 2020
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "High-speed rollercoaster; Acque Minerali section flows naturally"
+    }
   },
   {
     "id": "my-1999",
@@ -15030,7 +16384,38 @@
         2.760529
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Michael Schumacher",
+      "time": "1:34.080",
+      "year": 2000
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2019
+      ],
+      "layoutChanges": "Purpose-built; Turn 15 double-left unchanged; back straight DRS zone"
+    }
   },
   {
     "id": "cn-2004",
@@ -15609,7 +16994,33 @@
         31.336835
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Michael Schumacher",
+      "time": "1:32.238",
+      "year": 2004
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2016,
+        2017,
+        2018,
+        2019
+      ],
+      "layoutChanges": "Long back straight; snail section in sector 1; not used since 2019"
+    }
   },
   {
     "id": "gb-1948",
@@ -16164,7 +17575,93 @@
         52.07879
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Max Verstappen",
+      "time": "1:27.097",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Copse corner fast; Maggots-Becketts complex iconic; Club corner reprofiled 2010"
+    }
   },
   {
     "id": "sg-2008",
@@ -16643,7 +18140,33 @@
         1.291728
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:35.867",
+      "year": 2023
+    },
+    "drsZones": 3,
+    "trackHistory": {
+      "yearsHosted": [
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Night race since 2008; Turns 16-17 modified 2023; Anderson Bridge section"
+    }
   },
   {
     "id": "ru-2014",
@@ -17066,7 +18589,26 @@
         43.409699
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:35.761",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021
+      ],
+      "layoutChanges": "Olympic Park circuit; removed from calendar after 2021"
+    }
   },
   {
     "id": "be-1925",
@@ -17693,7 +19235,85 @@
         50.444251
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Valtteri Bottas",
+      "time": "1:46.286",
+      "year": 2018
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1958,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1968,
+        1970,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2004,
+        2005,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Eau Rouge/Raidillon iconic; Blanchimont reprofiled; bus stop chicane modified"
+    }
   },
   {
     "id": "at-1969",
@@ -18032,7 +19652,58 @@
         47.220023
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Carlos Sainz",
+      "time": "1:05.619",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Red Bull Ring; remodeled 1997 as A1-Ring; restored and expanded 2011"
+    }
   },
   {
     "id": "jp-1962",
@@ -18735,7 +20406,65 @@
         34.843344
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:30.983",
+      "year": 2019
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Figure-8 layout; 130R and Spoon Curve iconic; Esses section high-speed"
+    }
   },
   {
     "id": "ae-2009",
@@ -19282,7 +21011,34 @@
         24.46997
       ]
     ],
-    "continent": "Asia"
+    "continent": "Asia",
+    "lapRecord": {
+      "driver": "Max Verstappen",
+      "time": "1:26.103",
+      "year": 2021
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "layoutChanges": "Modified layout 2021: removed Turns 5-6, added faster section under hotel"
+    }
   },
   {
     "id": "nl-1948",
@@ -19773,6 +21529,76 @@
         52.388408
       ]
     ],
-    "continent": "Europe"
+    "continent": "Europe",
+    "lapRecord": {
+      "driver": "Lewis Hamilton",
+      "time": "1:11.097",
+      "year": 2020
+    },
+    "drsZones": 2,
+    "trackHistory": {
+      "yearsHosted": [
+        1950,
+        1951,
+        1952,
+        1953,
+        1954,
+        1955,
+        1956,
+        1957,
+        1958,
+        1959,
+        1960,
+        1961,
+        1962,
+        1963,
+        1964,
+        1965,
+        1966,
+        1967,
+        1968,
+        1969,
+        1970,
+        1971,
+        1972,
+        1973,
+        1974,
+        1975,
+        1976,
+        1977,
+        1978,
+        1979,
+        1980,
+        1981,
+        1982,
+        1983,
+        1984,
+        1985,
+        1986,
+        1987,
+        1988,
+        1989,
+        1990,
+        1991,
+        1992,
+        1993,
+        1994,
+        1995,
+        1996,
+        1997,
+        1998,
+        1999,
+        2000,
+        2001,
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008
+      ],
+      "layoutChanges": "Banked corners restored 2020; Tarzan corner since 1948; returned from 2020"
+    }
   }
 ]

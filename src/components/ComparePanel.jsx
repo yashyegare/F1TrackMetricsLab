@@ -75,6 +75,18 @@ function TrackCard({ circuit, color, unit }) {
             <span className="label">Altitude</span>
             <span className="value">{formatAlt(circuit.altitude, unit)}</span>
           </div>
+          {circuit.drsZones > 0 && (
+            <div>
+              <span className="label">DRS Zones</span>
+              <span className="value">{circuit.drsZones}</span>
+            </div>
+          )}
+          {circuit.lapRecord && (
+            <div className="compare-lap-record">
+              <span className="label">Lap Record</span>
+              <span className="value" style={{ fontSize: '12px' }}>{circuit.lapRecord.time} {circuit.lapRecord.driver} ({circuit.lapRecord.year})</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -50,6 +50,18 @@ function StatCard({ circuit, detail, color, unit }) {
           <span className="label">Altitude</span>
           <span className="value">{fmtAlt(circuit.altitude, unit)}</span>
         </div>
+        {circuit.drsZones > 0 && (
+          <div>
+            <span className="label">DRS Zones</span>
+            <span className="value">{circuit.drsZones}</span>
+          </div>
+        )}
+        {circuit.lapRecord && (
+          <div style={{ gridColumn: '1 / -1' }}>
+            <span className="label">Lap Record</span>
+            <span className="value" style={{ fontSize: '12px' }}>{circuit.lapRecord.time} {circuit.lapRecord.driver} ({circuit.lapRecord.year})</span>
+          </div>
+        )}
       </div>
     </div>
   );
