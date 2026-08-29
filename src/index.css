@@ -611,6 +611,54 @@ body {
   color: #d8d8db;
 }
 
+/* ---- 3D toolbar (anim + screenshot) ---- */
+
+.track3d-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.anim-controls, .screenshot-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  color: #8a8a90;
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+.anim-btn {
+  background: #1e1e22;
+  border: 1px solid #2c2c31;
+  color: #8a8a90;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.anim-btn:hover {
+  background: #2a2a2f;
+  color: #d8d8db;
+}
+
+.anim-btn.active {
+  background: #e10600;
+  border-color: #e10600;
+  color: white;
+}
+
 /* ---- Overlay 3D ---- */
 
 .overlay-3d-container {
