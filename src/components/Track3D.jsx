@@ -2,53 +2,35 @@ import React, { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
+import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 
-// --- geometry helpers (pure three.js, no React state) -----------------
-
-// For every point, offsets it left/right of the direction of travel by
-// half the track width, producing the two edges of a ribbon.
-function computeOffsetEdges(points, width) {
+// Computes per-point elevation (Y) from corner turn angles and circuit altitude.
+// Sharper turns at higher-altitude circuits get more exaggerated banking.
+function computeElevation(points, corners, altitudeMeters) {
   const n = points.length;
-  const hw = width / 2;
-  const left = new Array(n);
-  const right = new Array(n);
+  if (!altitudeMeters || altitudeMeters === 0) return new Float32Array(n).fill(0);
 
-  for (let i = 0; i < n; i++) {
-    const prev = points[(i - 1 + n) % n];
-    const next = points[(i + 1) % n];
-    let dx = next[0] - prev[0];
-    let dz = next[1] - prev[1];
-    const len = Math.hypot(dx, dz) || 1;
-    dx /= len;
-    dz /= len;
-    const px = -dz;
-    const pz = dx;
-    left[i] = [points[i][0] + px * hw, 0.06, points[i][1] + pz * hw];
-    right[i] = [points[i][0] - px * hw, 0.06, points[i][1] - pz * hw];
-  }
-  return { left, right };
-}
+  // Max elevation scales with altitude — ~1 unit per 200m, capped.
+  const maxLift = Math.min(Math.abs(altitudeMeters) / 200, 6);
 
-function buildRibbonGeometry(points, edges) {
-  const { left, right } = edges;
-  const n = points.length;
-  const arr = [];
+  // Gaussian influence radius: ~8% of track length in points.
+  const radius = Math.max(Math.floor(n * 0.08), 3);
 
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    const L0 = left[i];
-    const R0 = right[i];
-    const L1 = left[j];
-    const R1 = right[j];
-    arr.push(L0[0], 0, L0[2], R0[0], 0, R0[2], L1[0], 0, L1[2]);
-    arr.push(R0[0], 0, R0[2], R1[0], 0, R1[2], L1[0], 0, L1[2]);
+  // Seed sharp corners with lift proportional to turn angle.
+  const raw = new Float32Array(n);
+  for (const c of corners) {
+    const intensity = Math.min(Math.abs(c.angleDeg) / 60, 1) * maxLift;
+    for (let d = -radius; d <= radius; d++) {
+      const idx = ((c.index + d) % n + n) % n;
+      const falloff = Math.exp(-(d * d) / (2 * (radius * 0.4) ** 2));
+      raw[idx] = Math.max(raw[idx], intensity * falloff);
+    }
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(arr), 3));
-  geometry.computeVertexNormals();
-  return geometry;
+  return raw;
 }
+
+
 
 function makeCheckerTexture() {
   const size = 64;
@@ -70,10 +52,10 @@ function makeCheckerTexture() {
 
 // --- scene pieces --------------------------------------------------------
 
-function CornerMarker({ corner, poleHeight, accentColor }) {
+function CornerMarker({ corner, poleHeight, accentColor, y = 0 }) {
   const [x, z] = corner.position;
   return (
-    <group position={[x, 0, z]}>
+    <group position={[x, y, z]}>
       <mesh position={[0, poleHeight / 2, 0]}>
         <cylinderGeometry args={[poleHeight * 0.012, poleHeight * 0.012, poleHeight, 6]} />
         <meshStandardMaterial color="#3a3a40" />
@@ -117,7 +99,7 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
   );
 }
 
-function TrackScene({ detail, accentColor }) {
+function TrackScene({ detail, accentColor, altitude, circuitId }) {
   const { points, corners } = detail;
 
   const bbox = useMemo(() => {
@@ -130,16 +112,25 @@ function TrackScene({ detail, accentColor }) {
   const trackWidth = Math.min(Math.max(diag * 0.006, 40), 220);
   const poleHeight = Math.min(Math.max(diag * 0.02, 26), 90);
 
-  const edges = useMemo(() => computeOffsetEdges(points, trackWidth), [points, trackWidth]);
-  const ribbonGeometry = useMemo(() => buildRibbonGeometry(points, edges), [points, edges]);
+  const elevation = useMemo(() => computeElevation(points, corners, altitude), [points, corners, altitude]);
+  const hasElevation = altitude != null && altitude !== 0;
+
+  const edges = useMemo(() => getCachedEdges(circuitId, points, trackWidth), [circuitId, points, trackWidth]);
+  const ribbonGeometry = useMemo(() => getCachedRibbonGeometry(circuitId, points, edges, elevation), [circuitId, points, edges, elevation]);
   const checkerTexture = useMemo(() => makeCheckerTexture(), []);
 
-  const leftLoop = useMemo(() => [...edges.left, edges.left[0]], [edges]);
-  const rightLoop = useMemo(() => [...edges.right, edges.right[0]], [edges]);
+  const leftLoop = useMemo(() => {
+    return edges.left.map(([x, _y, z], i) => [x, elevation[i] ?? 0, z]);
+  }, [edges, elevation]);
+  const rightLoop = useMemo(() => {
+    return edges.right.map(([x, _y, z], i) => [x, elevation[i] ?? 0, z]);
+  }, [edges, elevation]);
   const centerLoop = useMemo(
-    () => [...points.map(([x, z]) => [x, 0.08, z]), [points[0][0], 0.08, points[0][1]]],
-    [points]
+    () => [...points.map(([x, z], i) => [x, (elevation[i] ?? 0) + 0.08, z]), [points[0][0], (elevation[0] ?? 0) + 0.08, points[0][1]]],
+    [points, elevation]
   );
+
+  const startElev = elevation[0] ?? 0;
 
   return (
     <>
@@ -155,15 +146,23 @@ function TrackScene({ detail, accentColor }) {
       <Line points={rightLoop} color="#f2f2f2" lineWidth={1.2} transparent opacity={0.55} />
       <Line points={centerLoop} color={accentColor} lineWidth={1.4} dashed dashSize={trackWidth * 0.4} gapSize={trackWidth * 0.4} />
 
-      <StartFinishGantry points={points} trackWidth={trackWidth} poleHeight={poleHeight} checkerTexture={checkerTexture} />
+      <group position={[0, startElev, 0]}>
+        <StartFinishGantry points={points} trackWidth={trackWidth} poleHeight={poleHeight} checkerTexture={checkerTexture} />
+      </group>
 
       {corners.map((corner) => (
-        <CornerMarker key={corner.index} corner={corner} poleHeight={poleHeight * 0.55} accentColor={accentColor} />
+        <CornerMarker
+          key={corner.index}
+          corner={corner}
+          poleHeight={poleHeight * 0.55}
+          accentColor={accentColor}
+          y={elevation[corner.index] ?? 0}
+        />
       ))}
 
-      <Billboard position={[0, poleHeight * 1.6, 0]}>
+      <Billboard position={[0, poleHeight * 1.6 + (hasElevation ? 1 : 0), 0]}>
         <Html center distanceFactor={poleHeight * 30} occlude={false}>
-          <div className="track3d-name-pill">{corners.length} corners</div>
+          <div className="track3d-name-pill">{corners.length} corners{hasElevation ? ' • elevation stylized' : ''}</div>
         </Html>
       </Billboard>
 
@@ -185,7 +184,7 @@ function TrackScene({ detail, accentColor }) {
   );
 }
 
-export default function Track3D({ detail, accentColor = '#e10600', height = 420 }) {
+export default function Track3D({ detail, accentColor = '#e10600', height = 420, altitude, circuitId }) {
   const { points } = detail;
 
   const camera = useMemo(() => {
@@ -212,7 +211,7 @@ export default function Track3D({ detail, accentColor = '#e10600', height = 420 
   return (
     <div className="track3d-canvas-wrap" style={{ height }}>
       <Canvas dpr={[1, 2]} camera={{ position: camera.position, fov: camera.fov, near: camera.near, far: camera.far }}>
-        <TrackScene detail={detail} accentColor={accentColor} />
+        <TrackScene detail={detail} accentColor={accentColor} altitude={altitude} circuitId={circuitId} />
         <OrbitControls
           enablePan={false}
           autoRotate

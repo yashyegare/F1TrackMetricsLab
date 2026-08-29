@@ -32,7 +32,17 @@ function buildTrackPath(circuit) {
   return d;
 }
 
-function TrackCard({ circuit, color }) {
+function formatLen(meters, unit) {
+  if (meters == null) return '—';
+  const km = meters / 1000;
+  return unit === 'imperial' ? `${(km * 0.621371).toFixed(2)} mi` : `${km.toFixed(3)} km`;
+}
+function formatAlt(meters, unit) {
+  if (meters == null) return '—';
+  return unit === 'imperial' ? `${(meters * 3.28084).toFixed(0)} ft` : `${meters} m`;
+}
+
+function TrackCard({ circuit, color, unit }) {
   const d = useMemo(() => buildTrackPath(circuit), [circuit]);
 
   return (
@@ -51,9 +61,7 @@ function TrackCard({ circuit, color }) {
         <div className="compare-stats">
           <div>
             <span className="label">Length</span>
-            <span className="value">
-              {circuit.length ? `${(circuit.length / 1000).toFixed(3)} km` : '—'}
-            </span>
+            <span className="value">{formatLen(circuit.length, unit)}</span>
           </div>
           <div>
             <span className="label">Opened</span>
@@ -65,9 +73,7 @@ function TrackCard({ circuit, color }) {
           </div>
           <div>
             <span className="label">Altitude</span>
-            <span className="value">
-              {circuit.altitude != null ? `${circuit.altitude} m` : '—'}
-            </span>
+            <span className="value">{formatAlt(circuit.altitude, unit)}</span>
           </div>
         </div>
       </div>
@@ -75,22 +81,22 @@ function TrackCard({ circuit, color }) {
   );
 }
 
-export default function ComparePanel({ primary, secondary }) {
+export default function ComparePanel({ primary, secondary, unit = 'metric' }) {
   const lengthDiff =
     primary.length && secondary.length
-      ? Math.abs(primary.length - secondary.length) / 1000
+      ? Math.abs(primary.length - secondary.length)
       : null;
 
   return (
     <div className="compare-wrapper">
       <div className="compare-panel">
-        <TrackCard circuit={primary} color="#e10600" />
-        <TrackCard circuit={secondary} color="#00a3ff" />
+        <TrackCard circuit={primary} color="#e10600" unit={unit} />
+        <TrackCard circuit={secondary} color="#00a3ff" unit={unit} />
       </div>
       {lengthDiff != null && (
         <p className="compare-note">
           Note: shapes are each scaled to fill their card, so sizes here aren't
-          directly comparable — length difference is {lengthDiff.toFixed(3)} km.
+          directly comparable — length difference is {formatLen(lengthDiff, unit)}.
         </p>
       )}
     </div>
