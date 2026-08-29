@@ -377,6 +377,7 @@ export default function Track3D({
     <div className="track3d-canvas-wrap" ref={externalCanvasRef} style={{ height }}>
       <Canvas
         dpr={[1, 2]}
+        gl={{ preserveDrawingBuffer: true }}
         camera={{ position: camera.position, fov: camera.fov, near: camera.near, far: camera.far }}
       >
         <TrackScene
