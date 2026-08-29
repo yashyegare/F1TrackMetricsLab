@@ -269,7 +269,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         total={total}
         speed={animSpeed}
         paused={animPaused}
-        size={diag * 0.025}
+        size={diag * 0.008}
         color="#ffcc00"
       />
     </>
