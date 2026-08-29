@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
+import { detectStraights } from '../utils/drsDetect';
 
 // --- Elevation computation ---------------------------------------------------
 
@@ -182,7 +183,7 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1 
 
 // --- Track scene -------------------------------------------------------------
 
-function TrackScene({ detail, accentColor, altitude, circuitId, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom }) {
+function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom }) {
   const { points, corners } = detail;
   const controlsRef = useRef();
   const { camera } = useThree();
@@ -212,6 +213,34 @@ function TrackScene({ detail, accentColor, altitude, circuitId, sharedCameraRef,
     [points, elevation]
   );
   const startElev = elevation[0] ?? 0;
+
+  // DRS zone detection
+  const drsSegments = useMemo(() => {
+    if (drsZones <= 0) return [];
+    return detectStraights(points, drsZones);
+  }, [points, drsZones]);
+
+  const drsLines = useMemo(() => {
+    if (drsSegments.length === 0) return [];
+    return drsSegments
+      .filter(s => s.drs)
+      .map(seg => {
+        const pts = [];
+        if (seg.start <= seg.end) {
+          for (let i = seg.start; i <= seg.end; i++) {
+            pts.push([points[i][0], (elevation[i] ?? 0) + 0.12, points[i][1]]);
+          }
+        } else {
+          for (let i = seg.start; i < points.length; i++) {
+            pts.push([points[i][0], (elevation[i] ?? 0) + 0.12, points[i][1]]);
+          }
+          for (let i = 0; i <= seg.end; i++) {
+            pts.push([points[i][0], (elevation[i] ?? 0) + 0.12, points[i][1]]);
+          }
+        }
+        return pts;
+      });
+  }, [drsSegments, points, elevation]);
 
   // Camera sync: broadcast position on change, apply external changes
   const broadcastCamera = useCallback(() => {
@@ -292,6 +321,11 @@ function TrackScene({ detail, accentColor, altitude, circuitId, sharedCameraRef,
       <Line points={rightLoop} color="#f2f2f2" lineWidth={1.2} transparent opacity={0.55} />
       <Line points={centerLoop} color={accentColor} lineWidth={1.4} dashed dashSize={trackWidth * 0.4} gapSize={trackWidth * 0.4} />
 
+      {/* DRS zone highlights */}
+      {drsLines.map((pts, i) => (
+        <Line key={`drs-${i}`} points={pts} color="#00ff88" lineWidth={2.5} transparent opacity={0.6} />
+      ))}
+
       <group position={[0, startElev, 0]}>
         <StartFinishGantry points={points} trackWidth={trackWidth} poleHeight={poleHeight} checkerTexture={checkerTexture} />
       </group>
@@ -347,7 +381,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, sharedCameraRef,
 // --- Main exported component -------------------------------------------------
 
 export default function Track3D({
-  detail, accentColor = '#e10600', height = 420, altitude, circuitId,
+  detail, accentColor = '#e10600', height = 420, altitude, circuitId, drsZones = 0,
   sharedCameraRef, instanceId, animSpeed = 0, animPaused = false,
   canvasRef: externalCanvasRef,
 }) {
@@ -385,6 +419,7 @@ export default function Track3D({
           accentColor={accentColor}
           altitude={altitude}
           circuitId={circuitId}
+          drsZones={drsZones}
           sharedCameraRef={sharedCameraRef}
           instanceId={instanceId}
           animSpeed={animSpeed}

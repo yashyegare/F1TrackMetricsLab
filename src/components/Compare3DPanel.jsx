@@ -24,6 +24,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
           height={380}
           altitude={circuit.altitude}
           circuitId={circuit.id}
+          drsZones={circuit.drsZones || 0}
           sharedCameraRef={sharedCameraRef}
           instanceId={instanceId}
           animSpeed={animSpeed}
@@ -123,26 +124,26 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
           </button>
         </div>
 
-        {viewMode === 'sidebyside' && (
-          <div className="track3d-toolbar">
-            <div className="anim-controls">
-              <span className="toolbar-label">Animate</span>
-              <button className={`anim-btn${animSpeed === 0 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0); setAnimPaused(false); }}>Off</button>
-              <button className={`anim-btn${animSpeed === 0.5 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0.5); setAnimPaused(false); }}>0.5×</button>
-              <button className={`anim-btn${animSpeed === 1 ? ' active' : ''}`} onClick={() => { setAnimSpeed(1); setAnimPaused(false); }}>1×</button>
-              <button className={`anim-btn${animSpeed === 2 ? ' active' : ''}`} onClick={() => { setAnimSpeed(2); setAnimPaused(false); }}>2×</button>
-              {animSpeed > 0 && (
-                <button className="anim-btn" onClick={() => setAnimPaused(p => !p)}>
-                  {animPaused ? '▶' : '⏸'}
-                </button>
-              )}
-            </div>
+        <div className="track3d-toolbar">
+          <div className="anim-controls">
+            <span className="toolbar-label">Animate</span>
+            <button className={`anim-btn${animSpeed === 0 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0); setAnimPaused(false); }}>Off</button>
+            <button className={`anim-btn${animSpeed === 0.5 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0.5); setAnimPaused(false); }}>0.5×</button>
+            <button className={`anim-btn${animSpeed === 1 ? ' active' : ''}`} onClick={() => { setAnimSpeed(1); setAnimPaused(false); }}>1×</button>
+            <button className={`anim-btn${animSpeed === 2 ? ' active' : ''}`} onClick={() => { setAnimSpeed(2); setAnimPaused(false); }}>2×</button>
+            {animSpeed > 0 && (
+              <button className="anim-btn" onClick={() => setAnimPaused(p => !p)}>
+                {animPaused ? '▶' : '⏸'}
+              </button>
+            )}
+          </div>
+          {viewMode === 'sidebyside' && (
             <div className="screenshot-controls">
               <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
               <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {viewMode === 'sidebyside' ? (
           <div className="compare3d-panel">
@@ -166,6 +167,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
               secondary={secondary}
               primaryDetail={primaryDetail}
               secondaryDetail={secondaryDetail}
+              animSpeed={animSpeed}
+              animPaused={animPaused}
             />
           </Suspense>
         )}

@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
+import { detectStraights } from '../utils/drsDetect';
 
 // --- Normalizes two sets of scene coords so they fit inside the same bounding box ---
 
@@ -19,6 +20,84 @@ function normalizePoints(pts) {
   const cx = (minX + maxX) / 2;
   const cz = (minZ + maxZ) / 2;
   return pts.map(([x, z]) => [(x - cx) * scale, (z - cz) * scale]);
+}
+
+// --- 3D cumulative distances for animation along normalized track ---
+
+function buildCumulativeDist3D(points, elevation) {
+  const cumulative = [0];
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i][0] - points[i - 1][0];
+    const dy = (elevation[i] ?? 0) - (elevation[i - 1] ?? 0);
+    const dz = points[i][1] - points[i - 1][1];
+    total += Math.hypot(dx, dy, dz);
+    cumulative.push(total);
+  }
+  const dx = points[0][0] - points[points.length - 1][0];
+  const dy = (elevation[0] ?? 0) - (elevation[points.length - 1] ?? 0);
+  const dz = points[0][1] - points[points.length - 1][1];
+  total += Math.hypot(dx, dy, dz);
+  return { cumulative, total };
+}
+
+function interpolateAlongPath3D(points, elevation, cumulative, total, ratio) {
+  if (points.length === 0 || total === 0) return [0, 0, 0];
+  const targetDist = (((ratio % 1) + 1) % 1) * total;
+  let i = 1;
+  while (i < cumulative.length && cumulative[i] < targetDist) i++;
+  if (i >= points.length) i = points.length - 1;
+  const prev = points[i - 1];
+  const curr = points[i];
+  const segStart = cumulative[i - 1];
+  const segEnd = cumulative[i];
+  const segLen = segEnd - segStart || 1;
+  const segRatio = Math.min(1, Math.max(0, (targetDist - segStart) / segLen));
+  const x = prev[0] + (curr[0] - prev[0]) * segRatio;
+  const y0 = (elevation[i - 1] ?? 0) + ((elevation[i] ?? 0) - (elevation[i - 1] ?? 0)) * segRatio;
+  const z = prev[1] + (curr[1] - prev[1]) * segRatio;
+  return [x, y0 + 0.003, z];
+}
+
+// --- Animated car dot for overlay ---
+
+function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00' }) {
+  const groupRef = useRef();
+  const progress = useRef(Math.random());
+
+  const sphereR = size;
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    if (paused || speed <= 0) {
+      groupRef.current.visible = false;
+      return;
+    }
+    groupRef.current.visible = true;
+    const dt = Math.min(delta, 0.1);
+    progress.current = (progress.current + dt * speed * 0.08) % 1;
+    const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progress.current);
+    groupRef.current.position.set(pos[0], pos[1], pos[2]);
+  });
+
+  const initPos = useMemo(() =>
+    interpolateAlongPath3D(points, elevation, cumulative, total, progress.current),
+    [points, elevation, cumulative, total]
+  );
+
+  return (
+    <group ref={groupRef} position={initPos} visible={speed > 0}>
+      <mesh>
+        <sphereGeometry args={[sphereR, 16, 16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} toneMapped={false} />
+      </mesh>
+      <pointLight color={color} intensity={sphereR * 80} distance={sphereR * 30} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -sphereR * 0.15, 0]}>
+        <ringGeometry args={[sphereR * 0.6, sphereR * 1.3, 20]} />
+        <meshStandardMaterial color={color} transparent opacity={0.3} emissive={color} emissiveIntensity={0.5} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
 }
 
 // --- Single track ribbon (semi-transparent) ---
@@ -94,7 +173,7 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0 }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
@@ -107,6 +186,40 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
   const depth = Math.max(...zs) - Math.min(...zs);
   const diag = Math.hypot(width, depth) || 1;
   const poleHeight = Math.min(Math.max(diag * 0.02, 0.008), 0.04);
+
+  // DRS zone detection on normalized points
+  const drsSegments = useMemo(() => {
+    if (drsZones <= 0) return [];
+    return detectStraights(normalizedPoints, drsZones);
+  }, [normalizedPoints, drsZones]);
+
+  const drsLines = useMemo(() => {
+    if (drsSegments.length === 0) return [];
+    return drsSegments
+      .filter(s => s.drs)
+      .map(seg => {
+        const pts = [];
+        if (seg.start <= seg.end) {
+          for (let i = seg.start; i <= seg.end; i++) {
+            pts.push([normalizedPoints[i][0], (elevation[i] ?? 0) + 0.004, normalizedPoints[i][1]]);
+          }
+        } else {
+          for (let i = seg.start; i < normalizedPoints.length; i++) {
+            pts.push([normalizedPoints[i][0], (elevation[i] ?? 0) + 0.004, normalizedPoints[i][1]]);
+          }
+          for (let i = 0; i <= seg.end; i++) {
+            pts.push([normalizedPoints[i][0], (elevation[i] ?? 0) + 0.004, normalizedPoints[i][1]]);
+          }
+        }
+        return pts;
+      });
+  }, [drsSegments, normalizedPoints, elevation]);
+
+  // Cumulative distances for animation
+  const { cumulative, total } = useMemo(
+    () => buildCumulativeDist3D(normalizedPoints, elevation),
+    [normalizedPoints, elevation]
+  );
 
   // Normalize corners to match normalized points
   const normalizedCorners = useMemo(() => {
@@ -144,14 +257,28 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
           y={elevation[corner.index] ?? 0}
         />
       ))}
+      {/* DRS zone highlights */}
+      {drsLines.map((pts, i) => (
+        <Line key={`ov-drs-${i}`} points={pts} color="#00ff88" lineWidth={3} transparent opacity={0.5} />
+      ))}
+
+      <OverlayCarDot
+        points={normalizedPoints}
+        elevation={elevation}
+        cumulative={cumulative}
+        total={total}
+        speed={animSpeed}
+        paused={animPaused}
+        size={diag * 0.025}
+        color="#ffcc00"
+      />
     </>
   );
 }
 
 // --- Main overlay scene ---
 
-function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId }) {
-  // We use a fixed "unit" scene scale — both tracks are normalized to fit inside ~1 unit
+function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused }) {
   const diag = 1.4;
 
   const camera = useMemo(() => {
@@ -168,15 +295,17 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
   }, []);
 
   return (
-    <Canvas dpr={[1, 2]} camera={{ position: camera.position, fov: camera.fov, near: camera.near, far: camera.far }}>
+    <Canvas
+      dpr={[1, 2]}
+      gl={{ preserveDrawingBuffer: true }}
+      camera={{ position: camera.position, fov: camera.fov, near: camera.near, far: camera.far }}
+    >
       <ambientLight intensity={0.55} />
       <directionalLight position={[diag * 0.6, diag * 0.9, diag * 0.35]} intensity={1.15} />
       <directionalLight position={[-diag * 0.5, diag * 0.4, -diag * 0.4]} intensity={0.35} />
 
-      {/* Track A — red, more opaque */}
-      <OverlayTrack detail={primaryDetail} color="#e10600" opacity={0.72} showCorners altitude={primaryAltitude} circuitId={primaryId} />
-      {/* Track B — blue, slightly more transparent so A reads on top */}
-      <OverlayTrack detail={secondaryDetail} color="#00a3ff" opacity={0.55} showCorners altitude={secondaryAltitude} circuitId={secondaryId} />
+      <OverlayTrack detail={primaryDetail} color="#e10600" opacity={0.72} showCorners altitude={primaryAltitude} circuitId={primaryId} drsZones={primaryDrsZones} animSpeed={animSpeed} animPaused={animPaused} />
+      <OverlayTrack detail={secondaryDetail} color="#00a3ff" opacity={0.55} showCorners altitude={secondaryAltitude} circuitId={secondaryId} drsZones={secondaryDrsZones} animSpeed={animSpeed} animPaused={animPaused} />
 
       <Grid
         position={[0, -0.02, 0]}
@@ -205,12 +334,23 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
   );
 }
 
-export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail }) {
+export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false }) {
   return (
     <div className="compare3d-wrapper">
       <div className="overlay-3d-container">
         <div className="overlay-3d-canvas-wrap">
-          <OverlayScene primaryDetail={primaryDetail} secondaryDetail={secondaryDetail} primaryAltitude={primary.altitude} secondaryAltitude={secondary.altitude} primaryId={primary.id} secondaryId={secondary.id} />
+          <OverlayScene
+            primaryDetail={primaryDetail}
+            secondaryDetail={secondaryDetail}
+            primaryAltitude={primary.altitude}
+            secondaryAltitude={secondary.altitude}
+            primaryId={primary.id}
+            secondaryId={secondary.id}
+            primaryDrsZones={primary.drsZones || 0}
+            secondaryDrsZones={secondary.drsZones || 0}
+            animSpeed={animSpeed}
+            animPaused={animPaused}
+          />
         </div>
         <div className="overlay-3d-legend">
           <span className="overlay-legend-item">
