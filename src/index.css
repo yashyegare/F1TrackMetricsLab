@@ -857,6 +857,16 @@ body {
   border-color: #e10600;
 }
 
+.driver-picker-unavailable {
+  background: #1e1e22;
+  border: 1px solid #2c2c31;
+  border-radius: 6px;
+  color: #6a6a70;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-style: italic;
+}
+
 .telemetry-badge {
   display: flex;
   align-items: center;

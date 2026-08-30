@@ -213,80 +213,52 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
     let cancelled = false;
 
-    async function fetchTelemetry() {
-      // Primary
-      if (isTelemetryAvailable(primary.id)) {
-        setPrimaryLoading(true);
-        try {
-          setPrimaryLoadStep('Resolving session…');
-          const qualiData = await getQualifyingData(primary.id, telemetryYear);
-          if (cancelled || !qualiData) throw new Error('no qualifying data');
-          primaryQualiData.current = qualiData;
+    async function fetchSide(side) {
+      const circuit = side === 'primary' ? primary : secondary;
+      const isPrimary = side === 'primary';
+      const setDrivers = isPrimary ? setPrimaryDrivers : setSecondaryDrivers;
+      const setDriver = isPrimary ? setPrimaryDriver : setSecondaryDriver;
+      const setData = isPrimary ? setPrimaryTelemetry : setSecondaryTelemetry;
+      const setLoading = isPrimary ? setPrimaryLoading : setSecondaryLoading;
+      const setLoadStep = isPrimary ? setPrimaryLoadStep : setSecondaryLoadStep;
+      const qualiDataRef = isPrimary ? primaryQualiData : secondaryQualiData;
 
-          // Deduplicate drivers (some entries appear multiple times)
-          const seen = new Set();
-          const uniqueDrivers = qualiData.drivers.filter(d => {
-            if (seen.has(d.driver_number)) return false;
-            seen.add(d.driver_number);
-            return true;
-          }).sort((a, b) => a.full_name.localeCompare(b.full_name));
-          setPrimaryDrivers(uniqueDrivers);
+      if (!isTelemetryAvailable(circuit.id)) return;
+      setLoading(true);
+      try {
+        setLoadStep('Resolving session…');
+        const qualiData = await getQualifyingData(circuit.id, telemetryYear);
+        if (cancelled || !qualiData) throw new Error('no qualifying data');
+        qualiDataRef.current = qualiData;
 
-          const fastestDriver = qualiData.laps[0]?.driver_number;
-          const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
-          const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
-          if (fastestDriver != null) setPrimaryDriver(fastestDriver);
+        const seen = new Set();
+        const uniqueDrivers = qualiData.drivers.filter(d => {
+          if (seen.has(d.driver_number)) return false;
+          seen.add(d.driver_number);
+          return true;
+        }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+        setDrivers(uniqueDrivers);
 
-          setPrimaryLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
-          const data = await fetchDriverTelemetry(primary.id, telemetryYear, qualiData, fastestDriver);
-          if (!cancelled && data) {
-            setPrimaryLoadStep('Projecting ribbon alignment…');
-            const { projected, binned } = getCachedProjection(primary.id, telemetryYear, primary.coordinates, data.telemetry);
-            setPrimaryTelemetry({ ...data, binned, projected });
-          }
-        } catch (e) {
-          console.warn('Telemetry fetch failed for', primary.id, e);
+        const fastestDriver = qualiData.laps[0]?.driver_number;
+        const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
+        const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
+        if (fastestDriver != null) setDriver(fastestDriver);
+
+        setLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
+        const data = await fetchDriverTelemetry(circuit.id, telemetryYear, qualiData, fastestDriver);
+        if (!cancelled && data) {
+          setLoadStep('Projecting ribbon alignment…');
+          const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, circuit.coordinates, data.telemetry);
+          setData({ ...data, binned, projected });
         }
-        if (!cancelled) { setPrimaryLoading(false); setPrimaryLoadStep(''); }
+      } catch (e) {
+        console.warn('Telemetry fetch failed for', circuit.id, e);
       }
-
-      // Secondary
-      if (isTelemetryAvailable(secondary.id)) {
-        setSecondaryLoading(true);
-        try {
-          setSecondaryLoadStep('Resolving session…');
-          const qualiData = await getQualifyingData(secondary.id, telemetryYear);
-          if (cancelled || !qualiData) throw new Error('no qualifying data');
-          secondaryQualiData.current = qualiData;
-
-          const seen = new Set();
-          const uniqueDrivers = qualiData.drivers.filter(d => {
-            if (seen.has(d.driver_number)) return false;
-            seen.add(d.driver_number);
-            return true;
-          }).sort((a, b) => a.full_name.localeCompare(b.full_name));
-          setSecondaryDrivers(uniqueDrivers);
-
-          const fastestDriver = qualiData.laps[0]?.driver_number;
-          const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
-          const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
-          if (fastestDriver != null) setSecondaryDriver(fastestDriver);
-
-          setSecondaryLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
-          const data = await fetchDriverTelemetry(secondary.id, telemetryYear, qualiData, fastestDriver);
-          if (!cancelled && data) {
-            setSecondaryLoadStep('Projecting ribbon alignment…');
-            const { projected, binned } = getCachedProjection(secondary.id, telemetryYear, secondary.coordinates, data.telemetry);
-            setSecondaryTelemetry({ ...data, binned, projected });
-          }
-        } catch (e) {
-          console.warn('Telemetry fetch failed for', secondary.id, e);
-        }
-        if (!cancelled) { setSecondaryLoading(false); setSecondaryLoadStep(''); }
-      }
+      if (!cancelled) { setLoading(false); setLoadStep(''); }
     }
 
-    fetchTelemetry();
+    // Fetch both sides in parallel
+    Promise.allSettled([fetchSide('primary'), fetchSide('secondary')]);
     return () => { cancelled = true; };
   }, [telemetryMode, telemetryYear, primary.id, secondary.id, primary.coordinates, secondary.coordinates]);
 
@@ -447,43 +419,96 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
             )}
           </div>
 
-          {viewMode === 'sidebyside' && (
-            <>
-              <div className="anim-controls telemetry-controls">
-                <button
-                  className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
-                  onClick={() => setTelemetryMode(t => !t)}
-                  title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
-                >
-                  {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
-                </button>
-                {telemetryMode && (
-                  <select
-                    className="telemetry-year-select"
-                    value={telemetryYear}
-                    onChange={e => {
-                      const y = Number(e.target.value);
-                      setTelemetryYear(y);
-                      // Reset driver selections on year change
-                      setPrimaryDriver(null);
-                      setSecondaryDriver(null);
-                    }}
-                  >
-                    <option value={2026}>2026</option>
-                    <option value={2025}>2025</option>
-                    <option value={2024}>2024</option>
-                    <option value={2023}>2023</option>
-                  </select>
-                )}
-              </div>
-              <div className="screenshot-controls">
-                <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
-                <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
-                <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
-              </div>
-            </>
-          )}
+          <div className="anim-controls telemetry-controls">
+            <button
+              className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
+              onClick={() => setTelemetryMode(t => !t)}
+              title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
+            >
+              {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
+            </button>
+            {telemetryMode && (
+              <select
+                className="telemetry-year-select"
+                value={telemetryYear}
+                onChange={e => {
+                  const y = Number(e.target.value);
+                  setTelemetryYear(y);
+                  setPrimaryDriver(null);
+                  setSecondaryDriver(null);
+                }}
+              >
+                <option value={2026}>2026</option>
+                <option value={2025}>2025</option>
+                <option value={2024}>2024</option>
+                <option value={2023}>2023</option>
+              </select>
+            )}
+          </div>
+          <div className="screenshot-controls">
+            <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
+            <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
+            <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
+          </div>
         </div>
+
+        {/* Driver pickers — shown above the canvases when Race Pace is active */}
+        {telemetryMode && (
+          <div className="driver-picker-row">
+            {primaryHasTelemetry && primaryDrivers.length > 0 ? (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
+                <select
+                  className="driver-picker-select"
+                  value={primaryDriver ?? ''}
+                  onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
+                >
+                  {primaryDrivers.map(d => (
+                    <option key={d.driver_number} value={d.driver_number}>
+                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : primaryHasTelemetry ? (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
+                <span className="driver-picker-unavailable">Loading drivers…</span>
+              </div>
+            ) : (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#666' }}>Track A</label>
+                <span className="driver-picker-unavailable">Telemetry not available</span>
+              </div>
+            )}
+            {secondaryHasTelemetry && secondaryDrivers.length > 0 ? (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
+                <select
+                  className="driver-picker-select"
+                  value={secondaryDriver ?? ''}
+                  onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
+                >
+                  {secondaryDrivers.map(d => (
+                    <option key={d.driver_number} value={d.driver_number}>
+                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : secondaryHasTelemetry ? (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
+                <span className="driver-picker-unavailable">Loading drivers…</span>
+              </div>
+            ) : (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#666' }}>Track B</label>
+                <span className="driver-picker-unavailable">Telemetry not available</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {viewMode === 'sidebyside' ? (
           <div className="compare3d-panel">
@@ -517,45 +542,9 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </Suspense>
         )}
 
-        {/* Driver picker — appears below the cards when Race Pace is active */}
-        {viewMode === 'sidebyside' && telemetryMode && (primaryDrivers.length > 0 || secondaryDrivers.length > 0) && (
-          <div className="driver-picker-row">
-            {primaryHasTelemetry && primaryDrivers.length > 0 && (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
-                <select
-                  className="driver-picker-select"
-                  value={primaryDriver ?? ''}
-                  onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
-                >
-                  {primaryDrivers.map(d => (
-                    <option key={d.driver_number} value={d.driver_number}>
-                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {secondaryHasTelemetry && secondaryDrivers.length > 0 && (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
-                <select
-                  className="driver-picker-select"
-                  value={secondaryDriver ?? ''}
-                  onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
-                >
-                  {secondaryDrivers.map(d => (
-                    <option key={d.driver_number} value={d.driver_number}>
-                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        )}
 
-        {viewMode === 'sidebyside' && telemetryMode && (
+
+        {telemetryMode && (
           <TelemetryScrubber
             primaryProjected={primaryTelemetry?.projected}
             secondaryProjected={secondaryTelemetry?.projected}
