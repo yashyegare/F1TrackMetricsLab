@@ -5,6 +5,7 @@ import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
 import { useStore } from './store';
+import { getTrackDetail } from './utils/track3d';
 
 const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'));
 
@@ -135,15 +136,7 @@ function FlyToCircuit({ circuit }) {
   return null;
 }
 
-// Lazy import for getTrackDetail
-let _getTrackDetail;
-function getTrackDetail(circuit) {
-  if (!_getTrackDetail) {
-    // Sync import — the module is already loaded by the time this runs
-    _getTrackDetail = require('./utils/track3d').getTrackDetail;
-  }
-  return _getTrackDetail(circuit);
-}
+
 
 export default function App() {
   const searchRef = useRef(null);
