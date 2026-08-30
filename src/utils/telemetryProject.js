@@ -96,52 +96,48 @@ function nearestPointOnPolyline(query, points, cumLengths, totalLen) {
  * Uses a coarse-to-fine search: 360 steps, then refine around the best.
  */
 function findBestRotation(trackNorm, openf1Norm, trackCum, trackTotal) {
-  // Coarse search: every 1 degree
-  let bestAngle = 0;
-  let bestAvgDist = Infinity;
-
-  for (let deg = 0; deg < 360; deg += 1) {
-    const angle = (deg * Math.PI) / 180;
-    const rotated = rotatePoints(openf1Norm, angle);
-
-    // Sample every 5th point for speed
-    let totalDist = 0;
-    let count = 0;
-    for (let i = 0; i < rotated.length; i += 5) {
-      const { distance } = nearestPointOnPolyline(rotated[i], trackNorm, trackCum, trackTotal);
-      totalDist += distance;
-      count++;
+  function searchAngle(points, startDeg, endDeg, step) {
+    let best = { angle: 0, avgDist: Infinity };
+    for (let deg = startDeg; deg < endDeg; deg += step) {
+      const angle = (deg * Math.PI) / 180;
+      const rotated = rotatePoints(points, angle);
+      let totalDist = 0;
+      let count = 0;
+      for (let i = 0; i < rotated.length; i += (step < 1 ? 3 : 5)) {
+        const { distance } = nearestPointOnPolyline(rotated[i], trackNorm, trackCum, trackTotal);
+        totalDist += distance;
+        count++;
+      }
+      const avgDist = totalDist / count;
+      if (avgDist < best.avgDist) {
+        best = { angle, avgDist };
+      }
     }
-    const avgDist = totalDist / count;
+    return best;
+  }
 
-    if (avgDist < bestAvgDist) {
-      bestAvgDist = avgDist;
-      bestAngle = angle;
-    }
+  // Coarse search on normal orientation
+  const normal = searchAngle(openf1Norm, 0, 360, 1);
+
+  // Coarse search on mirrored (y-negated) orientation
+  const mirrored = openf1Norm.map(([x, y]) => [x, -y]);
+  const mirrorResult = searchAngle(mirrored, 0, 360, 1);
+
+  let bestPoints, coarseAngle, bestAvgDist;
+  if (mirrorResult.avgDist < normal.avgDist) {
+    bestPoints = mirrored;
+    coarseAngle = mirrorResult.angle;
+    bestAvgDist = mirrorResult.avgDist;
+  } else {
+    bestPoints = openf1Norm;
+    coarseAngle = normal.angle;
+    bestAvgDist = normal.avgDist;
   }
 
   // Fine search: ±5° around best, step 0.1°
-  const coarseAngle = bestAngle;
-  for (let deg = -50; deg <= 50; deg++) {
-    const angle = coarseAngle + (deg * 0.1 * Math.PI) / 180;
-    const rotated = rotatePoints(openf1Norm, angle);
+  const fine = searchAngle(bestPoints, (coarseAngle * 180 / Math.PI) - 5, (coarseAngle * 180 / Math.PI) + 5, 0.1);
 
-    let totalDist = 0;
-    let count = 0;
-    for (let i = 0; i < rotated.length; i += 3) {
-      const { distance } = nearestPointOnPolyline(rotated[i], trackNorm, trackCum, trackTotal);
-      totalDist += distance;
-      count++;
-    }
-    const avgDist = totalDist / count;
-
-    if (avgDist < bestAvgDist) {
-      bestAvgDist = avgDist;
-      bestAngle = angle;
-    }
-  }
-
-  return bestAngle;
+  return { angle: fine.angle, avgDistance: fine.avgDist, mirrored: mirrorResult.avgDist < normal.avgDist };
 }
 
 /**
@@ -158,17 +154,20 @@ export function projectTelemetry(trackCoords, openf1Telemetry) {
   const trackMeters = projectToLocalMeters(trackCoords);
   const trackNorm = normalizeScale(translateToOrigin(trackMeters));
 
-  // 2. Extract OpenF1 x,z as 2D points
-  const openf1Points = openf1Telemetry.map(d => [d.x, d.z]);
+  // 2. Extract OpenF1 x,y as 2D horizontal ground-plane points (z is elevation)
+  const openf1Points = openf1Telemetry.map(d => [d.x, d.y]);
   const openf1Norm = normalizeScale(translateToOrigin(openf1Points));
 
   // 3. Compute cumulative lengths for track
   const trackCum = cumulativeLengths(trackNorm);
   const trackTotal = trackCum[trackCum.length - 1] || 1;
 
-  // 4. Find best rotation
-  const bestAngle = findBestRotation(trackNorm, openf1Norm, trackCum, trackTotal);
-  const rotatedOpenf1 = rotatePoints(openf1Norm, bestAngle);
+  // 4. Find best rotation (tests both normal and mirrored orientations)
+  const alignment = findBestRotation(trackNorm, openf1Norm, trackCum, trackTotal);
+  const bestPoints = alignment.mirrored
+    ? openf1Norm.map(([x, y]) => [x, -y])
+    : openf1Norm;
+  const rotatedOpenf1 = rotatePoints(bestPoints, alignment.angle);
 
   // 5. For each OpenF1 point, find nearest point on track
   const projected = openf1Telemetry.map((sample, i) => {
@@ -188,10 +187,21 @@ export function projectTelemetry(trackCoords, openf1Telemetry) {
   });
 
   const avgDist = projected.reduce((sum, p) => sum + p.distance, 0) / projected.length;
-  return {
-    projected,
-    alignment: { angle: bestAngle, avgDistance: avgDist },
-  };
+  alignment.avgDistance = avgDist;
+
+  // Warn if alignment is poor (threshold: 15% of track bounding box)
+  const trackBbox = Math.max(
+    Math.max(...trackNorm.map(p => p[0])) - Math.min(...trackNorm.map(p => p[0])),
+    Math.max(...trackNorm.map(p => p[1])) - Math.min(...trackNorm.map(p => p[1]))
+  );
+  if (avgDist > trackBbox * 0.15) {
+    console.warn(
+      `OpenF1 telemetry alignment may be poor: avg distance ${avgDist.toFixed(4)} ` +
+      `vs track scale ${trackBbox.toFixed(4)} (${((avgDist / trackBbox) * 100).toFixed(1)}%)`
+    );
+  }
+
+  return { projected, alignment };
 }
 
 /**

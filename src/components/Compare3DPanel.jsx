@@ -43,7 +43,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
       {telemetry && (
         <div className="telemetry-badge">
           <span className="telemetry-badge-dot" />
-          Real telemetry — {telemetry.session.name} 2024
+          Real telemetry — {telemetry.session.name} {telemetry.session.year}
         </div>
       )}
       {telemetryLoading && (
