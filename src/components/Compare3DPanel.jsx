@@ -224,31 +224,32 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
             )}
           </div>
 
-          <div className="anim-controls telemetry-controls">
-            <button
-              className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
-              onClick={() => setTelemetryMode(t => !t)}
-              title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
-            >
-              {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
-            </button>
-            {telemetryMode && (
-              <select
-                className="telemetry-year-select"
-                value={telemetryYear}
-                onChange={e => setTelemetryYear(Number(e.target.value))}
-              >
-                <option value={2024}>2024</option>
-                <option value={2023}>2023</option>
-              </select>
-            )}
-          </div>
-
           {viewMode === 'sidebyside' && (
-            <div className="screenshot-controls">
-              <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
-              <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
-            </div>
+            <>
+              <div className="anim-controls telemetry-controls">
+                <button
+                  className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
+                  onClick={() => setTelemetryMode(t => !t)}
+                  title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
+                >
+                  {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
+                </button>
+                {telemetryMode && (
+                  <select
+                    className="telemetry-year-select"
+                    value={telemetryYear}
+                    onChange={e => setTelemetryYear(Number(e.target.value))}
+                  >
+                    <option value={2024}>2024</option>
+                    <option value={2023}>2023</option>
+                  </select>
+                )}
+              </div>
+              <div className="screenshot-controls">
+                <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
+                <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
+              </div>
+            </>
           )}
         </div>
 
