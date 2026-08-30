@@ -147,10 +147,11 @@ export async function getDrivers(sessionKey) {
 export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber, lapInfo, drivers = []) {
   const circuitName = getOpenF1CircuitName(circuitId);
 
-  await new Promise(r => setTimeout(r, 300));
-  const locationRaw = await getLocation(sessionKey, driverNumber);
-  await new Promise(r => setTimeout(r, 300));
-  const carDataRaw = await getCarData(sessionKey, driverNumber);
+  // Fetch location and car_data in parallel (both only need session_key + driver)
+  const [locationRaw, carDataRaw] = await Promise.all([
+    getLocation(sessionKey, driverNumber),
+    getCarData(sessionKey, driverNumber),
+  ]);
 
   const lapStart = new Date(lapInfo.date_start).getTime();
   const lapEnd = lapStart + lapInfo.lap_duration * 1000;
@@ -214,7 +215,12 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
 /**
  * Find the best qualifying session for a circuit+year, preferring main over sprint.
  */
+const qualiCache = new Map();
+
 export async function getQualifyingData(circuitId, year = 2024) {
+  const cacheKey = `${circuitId}:${year}`;
+  if (qualiCache.has(cacheKey)) return qualiCache.get(cacheKey);
+
   const sessions = await getSessions(circuitId, year);
   const allQualis = sessions.filter(s => s.session_type === 'Qualifying');
   let quali;
@@ -226,11 +232,16 @@ export async function getQualifyingData(circuitId, year = 2024) {
   }
   if (!quali) return null;
 
-  const laps = await getLaps(quali.session_key);
+  // Fetch laps and drivers in parallel (both only need session_key)
+  const [laps, drivers] = await Promise.all([
+    getLaps(quali.session_key),
+    getDrivers(quali.session_key),
+  ]);
   if (laps.length === 0) return null;
 
-  const drivers = await getDrivers(quali.session_key);
-  return { sessions, quali, laps, drivers };
+  const result = { sessions, quali, laps, drivers };
+  qualiCache.set(cacheKey, result);
+  return result;
 }
 
 /**
