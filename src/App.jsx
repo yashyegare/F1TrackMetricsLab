@@ -4,6 +4,7 @@ import circuits from './data/circuits.json';
 import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
+import LandingHero from './components/LandingHero.jsx';
 import { useStore } from './store';
 import { getTrackDetail } from './utils/track3d';
 
@@ -241,6 +242,7 @@ export default function App() {
         </div>
 
         <div className="mode-toggle">
+          <button className={!mode ? 'active' : ''} onClick={() => setMode(null)}>Home</button>
           <button className={mode === 'map' ? 'active' : ''} onClick={() => setMode('map')}>Map</button>
           <button className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>Compare</button>
           <button className={mode === 'compare3d' ? 'active' : ''} onClick={() => setMode('compare3d')}>3D View</button>
@@ -314,7 +316,9 @@ export default function App() {
       />
 
       <main className="map-area">
-        {mode === 'map' ? (
+        {!mode ? (
+          <LandingHero />
+        ) : mode === 'map' ? (
           <>
             <MapContainer center={[selected.lat, selected.lon]} zoom={selected.zoom} scrollWheelZoom className="map">
               <TileLayer

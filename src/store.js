@@ -23,7 +23,7 @@ export const useStore = create((set, get) => {
 
   return {
     // View state
-    mode: url.mode || loadState('f1_mode', 'map'),
+    mode: url.mode || loadState('f1_mode', null),
     selectedId: url.circuit || loadState('f1_selected', null),
     compareId: url.vs || loadState('f1_compare', null),
     unit: loadState('f1_unit', 'metric'),
