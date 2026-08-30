@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
-import { isTelemetryAvailable, getFastestLapTelemetry } from '../utils/openf1';
+import { isTelemetryAvailable, getFastestLapTelemetry, getQualifyingData, getLapTelemetry } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
 
 const Overlay3DPanel = React.lazy(() => import('./Overlay3DPanel.jsx'));
@@ -109,6 +109,23 @@ function formatLapDuration(seconds) {
   return `${mins}:${secs.padStart(6, '0')}`;
 }
 
+/**
+ * Given qualifying data and a driver number, find that driver's fastest lap
+ * and return the full telemetry result via getLapTelemetry.
+ */
+async function fetchDriverTelemetry(circuitId, year, qualiData, driverNumber) {
+  const { quali, laps, drivers } = qualiData;
+  // Find this driver's fastest lap
+  const driverLaps = laps.filter(l => l.driver_number === driverNumber);
+  if (driverLaps.length === 0) return null;
+  const fastest = driverLaps[0]; // already sorted by duration
+
+  const result = await getLapTelemetry(circuitId, year, quali.session_key, driverNumber, fastest, drivers);
+  if (!result) return null;
+  result.session.name = quali.session_name;
+  return result;
+}
+
 export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) {
   const [viewMode, setViewMode] = useState('sidebyside');
   const [animSpeed, setAnimSpeed] = useState(0);
@@ -120,6 +137,14 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
   const [primaryLoading, setPrimaryLoading] = useState(false);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
 
+  // Driver picker state
+  const [primaryDrivers, setPrimaryDrivers] = useState([]);
+  const [secondaryDrivers, setSecondaryDrivers] = useState([]);
+  const [primaryDriver, setPrimaryDriver] = useState(null); // null = fastest
+  const [secondaryDriver, setSecondaryDriver] = useState(null);
+  const primaryQualiData = useRef(null);
+  const secondaryQualiData = useRef(null);
+
   const primaryDetail = useMemo(() => getTrackDetail(primary), [primary]);
   const secondaryDetail = useMemo(() => getTrackDetail(secondary), [secondary]);
 
@@ -130,8 +155,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
   const primaryCanvasRef = useRef();
   const secondaryCanvasRef = useRef();
 
-  // Projection cache: avoids re-running the expensive rotation search
-  // when toggling telemetry on/off or switching views
+  // Projection cache
   const projectionCache = useRef(new Map());
 
   function getCachedProjection(circuitId, year, coordinates, telemetry) {
@@ -140,7 +164,6 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
     const { projected } = projectTelemetry(coordinates, telemetry);
     const binned = binTelemetry(projected, coordinates.length);
     const result = { projected, binned };
-    // Keep cache bounded (max 20 entries)
     if (projectionCache.current.size > 20) {
       const firstKey = projectionCache.current.keys().next().value;
       projectionCache.current.delete(firstKey);
@@ -154,17 +177,40 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
     if (!telemetryMode) {
       setPrimaryTelemetry(null);
       setSecondaryTelemetry(null);
+      setPrimaryDrivers([]);
+      setSecondaryDrivers([]);
+      setPrimaryDriver(null);
+      setSecondaryDriver(null);
+      primaryQualiData.current = null;
+      secondaryQualiData.current = null;
       return;
     }
 
     let cancelled = false;
 
     async function fetchTelemetry() {
-      // Only fetch for circuits with available data
+      // Primary
       if (isTelemetryAvailable(primary.id)) {
         setPrimaryLoading(true);
         try {
-          const data = await getFastestLapTelemetry(primary.id, telemetryYear);
+          const qualiData = await getQualifyingData(primary.id, telemetryYear);
+          if (cancelled || !qualiData) return;
+          primaryQualiData.current = qualiData;
+
+          // Deduplicate drivers (some entries appear multiple times)
+          const seen = new Set();
+          const uniqueDrivers = qualiData.drivers.filter(d => {
+            if (seen.has(d.driver_number)) return false;
+            seen.add(d.driver_number);
+            return true;
+          }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+          setPrimaryDrivers(uniqueDrivers);
+
+          // Default to fastest lap driver
+          const fastestDriver = qualiData.laps[0]?.driver_number;
+          if (fastestDriver != null) setPrimaryDriver(fastestDriver);
+
+          const data = await fetchDriverTelemetry(primary.id, telemetryYear, qualiData, fastestDriver);
           if (!cancelled && data) {
             const { projected, binned } = getCachedProjection(primary.id, telemetryYear, primary.coordinates, data.telemetry);
             setPrimaryTelemetry({ ...data, binned, projected });
@@ -175,10 +221,26 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
         if (!cancelled) setPrimaryLoading(false);
       }
 
+      // Secondary
       if (isTelemetryAvailable(secondary.id)) {
         setSecondaryLoading(true);
         try {
-          const data = await getFastestLapTelemetry(secondary.id, telemetryYear);
+          const qualiData = await getQualifyingData(secondary.id, telemetryYear);
+          if (cancelled || !qualiData) return;
+          secondaryQualiData.current = qualiData;
+
+          const seen = new Set();
+          const uniqueDrivers = qualiData.drivers.filter(d => {
+            if (seen.has(d.driver_number)) return false;
+            seen.add(d.driver_number);
+            return true;
+          }).sort((a, b) => a.full_name.localeCompare(b.full_name));
+          setSecondaryDrivers(uniqueDrivers);
+
+          const fastestDriver = qualiData.laps[0]?.driver_number;
+          if (fastestDriver != null) setSecondaryDriver(fastestDriver);
+
+          const data = await fetchDriverTelemetry(secondary.id, telemetryYear, qualiData, fastestDriver);
           if (!cancelled && data) {
             const { projected, binned } = getCachedProjection(secondary.id, telemetryYear, secondary.coordinates, data.telemetry);
             setSecondaryTelemetry({ ...data, binned, projected });
@@ -193,6 +255,31 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
     fetchTelemetry();
     return () => { cancelled = true; };
   }, [telemetryMode, telemetryYear, primary.id, secondary.id, primary.coordinates, secondary.coordinates]);
+
+  // Handle driver selection change
+  const handleDriverChange = useCallback(async (side, driverNumber) => {
+    const setDriver = side === 'primary' ? setPrimaryDriver : setSecondaryDriver;
+    const setData = side === 'primary' ? setPrimaryTelemetry : setSecondaryTelemetry;
+    const setLoading = side === 'primary' ? setPrimaryLoading : setSecondaryLoading;
+    const qualiDataRef = side === 'primary' ? primaryQualiData : secondaryQualiData;
+    const circuit = side === 'primary' ? primary : secondary;
+    const coords = side === 'primary' ? primary.coordinates : secondary.coordinates;
+
+    setDriver(driverNumber);
+    if (!qualiDataRef.current || !driverNumber) return;
+
+    setLoading(true);
+    try {
+      const data = await fetchDriverTelemetry(circuit.id, telemetryYear, qualiDataRef.current, driverNumber);
+      if (data) {
+        const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, coords, data.telemetry);
+        setData({ ...data, binned, projected });
+      }
+    } catch (e) {
+      console.warn('Driver telemetry fetch failed', e);
+    }
+    setLoading(false);
+  }, [telemetryYear, primary, secondary]);
 
   const handleScreenshot = useCallback((name) => {
     const cards = document.querySelectorAll('.track3d-canvas-wrap-outer');
@@ -255,7 +342,13 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
                   <select
                     className="telemetry-year-select"
                     value={telemetryYear}
-                    onChange={e => setTelemetryYear(Number(e.target.value))}
+                    onChange={e => {
+                      const y = Number(e.target.value);
+                      setTelemetryYear(y);
+                      // Reset driver selections on year change
+                      setPrimaryDriver(null);
+                      setSecondaryDriver(null);
+                    }}
                   >
                     <option value={2024}>2024</option>
                     <option value={2023}>2023</option>
@@ -300,9 +393,47 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
           </Suspense>
         )}
 
+        {/* Driver picker — appears below the cards when Race Pace is active */}
+        {viewMode === 'sidebyside' && telemetryMode && (primaryDrivers.length > 0 || secondaryDrivers.length > 0) && (
+          <div className="driver-picker-row">
+            {primaryHasTelemetry && primaryDrivers.length > 0 && (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
+                <select
+                  className="driver-picker-select"
+                  value={primaryDriver ?? ''}
+                  onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
+                >
+                  {primaryDrivers.map(d => (
+                    <option key={d.driver_number} value={d.driver_number}>
+                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {secondaryHasTelemetry && secondaryDrivers.length > 0 && (
+              <div className="driver-picker-group">
+                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
+                <select
+                  className="driver-picker-select"
+                  value={secondaryDriver ?? ''}
+                  onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
+                >
+                  {secondaryDrivers.map(d => (
+                    <option key={d.driver_number} value={d.driver_number}>
+                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
         <p className="compare-note">
           {telemetryMode ? (
-            <>Speed-colored ribbon uses real telemetry from OpenF1 ({primaryTelemetry?.lap?.driverName || ('Driver #' + (primaryTelemetry?.lap?.driver ?? '?'))}/{secondaryTelemetry?.lap?.driverName || ('Driver #' + (secondaryTelemetry?.lap?.driver ?? '?'))} fastest qualifying laps). Corner count and track shape from outline data, not official telemetry.</>
+            <>Speed-colored ribbon uses real telemetry from OpenF1 ({primaryTelemetry?.lap?.driverName || ('Driver #' + (primaryTelemetry?.lap?.driver ?? '?'))}/{secondaryTelemetry?.lap?.driverName || ('Driver #' + (secondaryTelemetry?.lap?.driver ?? '?'))} qualifying laps). Pick any driver from the dropdown to compare head-to-head.</>
           ) : (
             <>Track shape comes from the same outline data as the map view. Corner count, spin direction and longest straight are computed from that outline (not official telemetry), and the road width / marker heights are stylized for visibility, not to scale.</>
           )}

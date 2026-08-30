@@ -162,45 +162,19 @@ export async function getDrivers(sessionKey) {
 }
 
 /**
- * Full pipeline: get the fastest lap's telemetry for a circuit+year.
- * Returns null if no data available.
+ * Core telemetry fetch: given a session + driver + lap, fetch and join location+car_data.
+ * Returns { session, lap, telemetry } or null.
  */
-export async function getFastestLapTelemetry(circuitId, year = 2024) {
+export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber, lapInfo, drivers = []) {
   const circuitName = getOpenF1CircuitName(circuitId);
-  if (!circuitName) return null;
-
-  // 1. Find the qualifying session — prefer main Qualifying over Sprint Qualifying
-  const sessions = await getSessions(circuitId, year);
-  const allQualis = sessions.filter(s => s.session_type === 'Qualifying');
-  let quali;
-  if (allQualis.length > 1) {
-    // Multiple qualifying sessions (Sprint weekends) — pick the one WITHOUT 'Sprint' in name
-    quali = allQualis.find(s => !s.session_name?.toLowerCase().includes('sprint'))
-      || allQualis[allQualis.length - 1]; // fallback: last one (usually main)
-  } else {
-    quali = allQualis[0] || sessions.find(s => s.session_type === 'Race');
-  }
-  if (!quali) return null;
-
-  // 2. Find fastest lap
-  const laps = await getLaps(quali.session_key);
-  if (laps.length === 0) return null;
-  const fastest = laps[0];
-
-  // 3. Fetch driver info + location + car_data (sequential to avoid rate limits)
-  const drivers = await getDrivers(quali.session_key);
-  const driverInfo = drivers.find(d => d.driver_number === fastest.driver_number);
-  const driverName = driverInfo?.full_name || 'Driver #' + fastest.driver_number;
-  const teamName = driverInfo?.team_name || '';
 
   await new Promise(r => setTimeout(r, 300));
-  const locationRaw = await getLocation(quali.session_key, fastest.driver_number);
+  const locationRaw = await getLocation(sessionKey, driverNumber);
   await new Promise(r => setTimeout(r, 300));
-  const carDataRaw = await getCarData(quali.session_key, fastest.driver_number);
+  const carDataRaw = await getCarData(sessionKey, driverNumber);
 
-  // 4. Filter to the fastest lap's time window
-  const lapStart = new Date(fastest.date_start).getTime();
-  const lapEnd = lapStart + fastest.lap_duration * 1000;
+  const lapStart = new Date(lapInfo.date_start).getTime();
+  const lapEnd = lapStart + lapInfo.lap_duration * 1000;
 
   const location = locationRaw.filter(d => {
     const t = new Date(d.date).getTime();
@@ -214,7 +188,6 @@ export async function getFastestLapTelemetry(circuitId, year = 2024) {
     return t >= lapStart && t <= lapEnd;
   });
 
-  // 5. Join location + car_data by nearest timestamp
   const telemetry = location.map(loc => {
     let closest = null;
     let minDiff = Infinity;
@@ -238,21 +211,68 @@ export async function getFastestLapTelemetry(circuitId, year = 2024) {
     };
   });
 
+  const driverInfo = drivers.find(d => d.driver_number === driverNumber);
+
   return {
     session: {
-      key: quali.session_key,
-      name: quali.session_name,
+      key: sessionKey,
+      name: sessionKey, // will be overridden by caller
       year,
-      circuit: circuitName,
+      circuit: circuitName || circuitId,
     },
     lap: {
-      driver: fastest.driver_number,
-      driverName,
-      teamName,
-      number: fastest.lap_number,
-      duration: fastest.lap_duration,
-      dateStart: fastest.date_start,
+      driver: driverNumber,
+      driverName: driverInfo?.full_name || 'Driver #' + driverNumber,
+      teamName: driverInfo?.team_name || '',
+      number: lapInfo.lap_number,
+      duration: lapInfo.lap_duration,
+      dateStart: lapInfo.date_start,
     },
-    telemetry, // [{ x, y, z, speed, throttle, brake, drs, gear }]
+    telemetry,
   };
+}
+
+/**
+ * Find the best qualifying session for a circuit+year, preferring main over sprint.
+ * Returns { sessions, quali, laps, drivers } or null.
+ */
+export async function getQualifyingData(circuitId, year = 2024) {
+  const sessions = await getSessions(circuitId, year);
+  const allQualis = sessions.filter(s => s.session_type === 'Qualifying');
+  let quali;
+  if (allQualis.length > 1) {
+    quali = allQualis.find(s => !s.session_name?.toLowerCase().includes('sprint'))
+      || allQualis[allQualis.length - 1];
+  } else {
+    quali = allQualis[0] || sessions.find(s => s.session_type === 'Race');
+  }
+  if (!quali) return null;
+
+  const laps = await getLaps(quali.session_key);
+  if (laps.length === 0) return null;
+
+  const drivers = await getDrivers(quali.session_key);
+  return { sessions, quali, laps, drivers };
+}
+
+/**
+ * Full pipeline: get the fastest lap's telemetry for a circuit+year.
+ * Returns null if no data available.
+ */
+export async function getFastestLapTelemetry(circuitId, year = 2024) {
+  const circuitName = getOpenF1CircuitName(circuitId);
+  if (!circuitName) return null;
+
+  const data = await getQualifyingData(circuitId, year);
+  if (!data) return null;
+  const { quali, laps, drivers } = data;
+  const fastest = laps[0];
+
+  const result = await getLapTelemetry(
+    circuitId, year, quali.session_key,
+    fastest.driver_number, fastest, drivers
+  );
+  if (!result) return null;
+  result.session.name = quali.session_name;
+  return result;
 }

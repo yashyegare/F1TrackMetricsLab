@@ -698,6 +698,52 @@ body {
   border-color: #e10600;
 }
 
+/* Driver picker — shown below stat cards when Race Pace is active */
+.driver-picker-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 10px;
+}
+
+.driver-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.driver-picker-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.driver-picker-select {
+  background: #1e1e22;
+  border: 1px solid #2c2c31;
+  border-radius: 6px;
+  color: #d8d8db;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.12s;
+  width: 100%;
+}
+
+.driver-picker-select:hover {
+  border-color: #3a3a42;
+}
+
+.driver-picker-select:focus {
+  border-color: #e10600;
+}
+
 .telemetry-badge {
   display: flex;
   align-items: center;
