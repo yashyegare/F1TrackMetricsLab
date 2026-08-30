@@ -30,10 +30,36 @@ body {
   overflow: hidden;
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sidebar-header h1 {
   font-size: 20px;
   margin: 0;
   letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.cmd-trigger {
+  background: #1e1e22;
+  border: 1px solid #2c2c31;
+  color: #6a6a70;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.cmd-trigger:hover {
+  background: #2a2a2f;
+  color: #d8d8db;
+  border-color: #e10600;
 }
 
 .subtitle {
@@ -856,6 +882,174 @@ body {
 
 /* ---- Loading skeleton ---- */
 
+/* Command palette */
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.cmd-palette {
+  width: 520px;
+  max-width: 90vw;
+  background: #1a1a1e;
+  border: 1px solid #2c2c31;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  animation: cmdSlideIn 0.15s ease-out;
+}
+
+@keyframes cmdSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cmd-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #2c2c31;
+}
+
+.cmd-icon {
+  font-size: 16px;
+  color: #e10600;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cmd-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #f2f2f2;
+  font-size: 15px;
+  outline: none;
+  font-family: inherit;
+}
+
+.cmd-input::placeholder {
+  color: #6a6a70;
+}
+
+.cmd-hint {
+  font-size: 10px;
+  color: #6a6a70;
+  background: #2c2c31;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cmd-results {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.cmd-empty {
+  padding: 20px;
+  text-align: center;
+  color: #6a6a70;
+  font-size: 13px;
+}
+
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: #d8d8db;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.cmd-item:hover,
+.cmd-item.selected {
+  background: #2a2a2f;
+}
+
+.cmd-item.selected {
+  background: #e106001a;
+  border: 1px solid #e1060040;
+}
+
+.cmd-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.cmd-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cmd-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-item-sublabel {
+  font-size: 11px;
+  color: #6a6a70;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-item-shortcut {
+  font-size: 10px;
+  color: #6a6a70;
+  background: #2c2c31;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cmd-item-active {
+  font-size: 10px;
+  color: #00ff88;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.cmd-item-active.compare {
+  color: #00a3ff;
+}
+
+.cmd-footer {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  border-top: 1px solid #2c2c31;
+  font-size: 10px;
+  color: #6a6a70;
+}
+
 .loading-3d {
   width: 100%;
   height: 520px;
@@ -1114,4 +1308,72 @@ body {
   .basemap-toggle {
     top: 60px;
   }
+
+  .track3d-toolbar {
+    gap: 6px;
+    padding: 0 4px;
+  }
+
+  .anim-controls {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .screenshot-controls {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .telemetry-controls {
+    padding-left: 6px;
+  }
+
+  .driver-picker-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cmd-palette {
+    max-width: 95vw;
+    margin-top: 60px;
+  }
+
+  .compare-note {
+    font-size: 10px;
+    max-width: 100%;
+  }
+}
+
+/* ---- Accessibility ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .track3d-canvas-wrap-outer canvas {
+    /* Stop auto-rotation in Three.js via CSS */
+  }
+}
+
+/* Color-blind safe mode: add patterns/stripes alongside colors */
+.colorblind-mode .track3d-canvas-wrap-outer:first-child {
+  border-style: solid;
+}
+.colorblind-mode .track3d-canvas-wrap-outer:last-child {
+  border-style: dashed;
+}
+
+/* Focus-visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #e10600;
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid #e10600;
+  outline-offset: 1px;
 }

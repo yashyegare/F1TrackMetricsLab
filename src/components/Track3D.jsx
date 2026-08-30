@@ -514,7 +514,7 @@ export default function Track3D({
   }, [points]);
 
   return (
-    <div className="track3d-canvas-wrap" ref={externalCanvasRef} style={{ height }}>
+    <div className="track3d-canvas-wrap" ref={externalCanvasRef} style={{ height }} role="img" aria-label={`${detail.corners.length}-corner ${detail.direction} track 3D visualization`}>
       <Canvas
         dpr={[1, 2]}
         gl={{ preserveDrawingBuffer: true }}

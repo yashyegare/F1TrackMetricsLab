@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import circuits from './data/circuits.json';
 import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
+import CommandPalette from './components/CommandPalette.jsx';
 
 const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'));
 
@@ -213,6 +214,7 @@ export default function App() {
   const [filterContinent, setFilterContinent] = useState('All');
   const [sortBy, setSortBy] = useState('name');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const searchRef = useRef(null);
 
   // --- Persist state changes ---
@@ -231,7 +233,10 @@ export default function App() {
     function onKey(e) {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if (e.key === '/') { e.preventDefault(); searchRef.current?.focus(); return; }
+      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === 'k' && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault(); setCmdOpen(o => !o); return;
+      }
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const idx = circuits.findIndex(c => c.id === selectedId);
@@ -285,6 +290,12 @@ export default function App() {
   // Close sidebar on mobile when selecting a circuit
   const selectCircuit = (id) => { setSelectedId(id); setSidebarOpen(false); };
 
+  // Command palette: select circuit and ensure we're in compare3d mode
+  const handleCmdSelect = useCallback((id) => {
+    setSelectedId(id);
+    if (mode === 'map') setMode('compare3d');
+  }, [mode]);
+
   return (
     <div className="app">
       {/* Mobile hamburger */}
@@ -296,6 +307,7 @@ export default function App() {
         <div className="sidebar-header">
           <h1>F1 Circuits</h1>
           <p className="subtitle">Unofficial track map explorer</p>
+          <button className="cmd-trigger" onClick={() => setCmdOpen(true)} title="Command palette (Ctrl+K)">⌘K</button>
         </div>
 
         <div className="mode-toggle">
@@ -359,6 +371,17 @@ export default function App() {
       </aside>
 
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+
+      <CommandPalette
+        circuits={circuits}
+        selectedId={selectedId}
+        compareId={compareId}
+        mode={mode}
+        onSelectCircuit={handleCmdSelect}
+        onSetMode={setMode}
+        isOpen={cmdOpen}
+        onClose={() => setCmdOpen(false)}
+      />
 
       <main className="map-area">
         {mode === 'map' ? (

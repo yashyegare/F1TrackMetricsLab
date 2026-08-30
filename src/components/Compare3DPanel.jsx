@@ -293,6 +293,91 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
     }
   }, []);
 
+  const handleShareCard = useCallback(() => {
+    const W = 1200, H = 630;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#0d0d0f';
+    ctx.fillRect(0, 0, W, H);
+
+    // Header bar
+    ctx.fillStyle = '#e10600';
+    ctx.fillRect(0, 0, W, 4);
+
+    // Title
+    ctx.fillStyle = '#f2f2f2';
+    ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('F1 Track Comparison', 32, 40);
+
+    // Subtitle with circuit names
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = '#8a8a90';
+    ctx.fillText(`${primary.name}  vs  ${secondary.name}`, 32, 62);
+
+    // Separator line
+    ctx.strokeStyle = '#2c2c31';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(32, 74); ctx.lineTo(W - 32, 74); ctx.stroke();
+
+    // Draw track canvases side by side
+    const cards = document.querySelectorAll('.track3d-canvas-wrap-outer');
+    const gap = 20;
+    const cardW = (W - 64 - gap) / 2;
+    const cardH = 360;
+    const cardY = 90;
+
+    cards.forEach((card, i) => {
+      const cvs = card?.querySelector('canvas');
+      if (!cvs) return;
+      const x = 32 + i * (cardW + gap);
+      // Draw border
+      const borderColor = i === 0 ? '#e10600' : '#00a3ff';
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, cardY, cardW, cardH);
+      // Draw canvas content scaled
+      ctx.drawImage(cvs, x, cardY, cardW, cardH);
+    });
+
+    // Stats row at bottom
+    const statsY = cardY + cardH + 20;
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    const stats = [
+      { label: primary.name, color: '#e10600' },
+      { label: `${(primaryDetail.lengthMeters / 1000).toFixed(3)} km` },
+      { label: `${primaryDetail.corners.length} corners` },
+      { label: 'vs', color: '#6a6a70' },
+      { label: secondary.name, color: '#00a3ff' },
+      { label: `${(secondaryDetail.lengthMeters / 1000).toFixed(3)} km` },
+      { label: `${secondaryDetail.corners.length} corners` },
+    ];
+    let sx = 32;
+    stats.forEach(s => {
+      ctx.fillStyle = s.color || '#d8d8db';
+      ctx.font = s.color ? 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif' : '12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText(s.label, sx, statsY);
+      sx += ctx.measureText(s.label).width + 18;
+    });
+
+    // Footer branding
+    ctx.fillStyle = '#4a4a50';
+    ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('F1 Track Metrics Lab · Unofficial · Track data from bacinger/f1-circuits', 32, H - 16);
+
+    // Download
+    const link = document.createElement('a');
+    link.download = `f1-compare-${primary.id}-vs-${secondary.id}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, [primary, secondary, primaryDetail, secondaryDetail]);
+
   const primaryHasTelemetry = isTelemetryAvailable(primary.id);
   const secondaryHasTelemetry = isTelemetryAvailable(secondary.id);
 
@@ -356,6 +441,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
                 )}
               </div>
               <div className="screenshot-controls">
+                <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
                 <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
                 <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
               </div>
