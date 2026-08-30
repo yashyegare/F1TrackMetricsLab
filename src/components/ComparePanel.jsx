@@ -53,7 +53,7 @@ function buildTrackSegments(circuit, drsZones) {
   const offsetY = (CARD_SIZE - pxH) / 2;
 
   // Detect DRS segments
-  const segments = detectStraights(points, drsZones);
+  const segments = [...detectStraights(points, drsZones)].sort((a, b) => a.start - b.start);
 
   // Build pixel positions
   const pxPoints = points.map(([x, y]) => [

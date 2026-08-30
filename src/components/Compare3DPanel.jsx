@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
-import { isTelemetryAvailable, getFastestLapTelemetry, getQualifyingData, getLapTelemetry } from '../utils/openf1';
+import { isTelemetryAvailable, getQualifyingData, getLapTelemetry } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
 
 const Overlay3DPanel = React.lazy(() => import('./Overlay3DPanel.jsx'));
@@ -194,7 +194,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
         setPrimaryLoading(true);
         try {
           const qualiData = await getQualifyingData(primary.id, telemetryYear);
-          if (cancelled || !qualiData) return;
+          if (cancelled || !qualiData) throw new Error('no qualifying data');
           primaryQualiData.current = qualiData;
 
           // Deduplicate drivers (some entries appear multiple times)
@@ -226,7 +226,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
         setSecondaryLoading(true);
         try {
           const qualiData = await getQualifyingData(secondary.id, telemetryYear);
-          if (cancelled || !qualiData) return;
+          if (cancelled || !qualiData) throw new Error('no qualifying data');
           secondaryQualiData.current = qualiData;
 
           const seen = new Set();
@@ -435,6 +435,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
                       setSecondaryDriver(null);
                     }}
                   >
+                    <option value={2026}>2026</option>
+                    <option value={2025}>2025</option>
                     <option value={2024}>2024</option>
                     <option value={2023}>2023</option>
                   </select>

@@ -170,6 +170,17 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
       raw[idx] = Math.max(raw[idx], intensity * falloff);
     }
   }
+  // Scale elevation to overlay scene units (~1 unit across)
+  // Match the poleHeight scale: diag * 0.02 clamped to 0.008–0.04
+  const xs = normalizedPoints.map(p => p[0]);
+  const zs = normalizedPoints.map(p => p[1]);
+  const width = Math.max(...xs) - Math.min(...xs);
+  const depth = Math.max(...zs) - Math.min(...zs);
+  const diag = Math.hypot(width, depth) || 1;
+  const targetScale = Math.min(Math.max(diag * 0.02, 0.008), 0.04);
+  const rawMax = Math.max(...raw) || 1;
+  const scale = targetScale / rawMax;
+  for (let i = 0; i < raw.length; i++) raw[i] *= scale;
   return raw;
 }
 

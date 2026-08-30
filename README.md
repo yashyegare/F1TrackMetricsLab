@@ -2,7 +2,7 @@
 
 Interactive Formula 1 circuit explorer with 2D map, flat comparison, and 3D visualization modes. Built with React, Vite, Leaflet, and Three.js.
 
-Track data (outlines, metadata, lap records, DRS zones, history) sourced from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) — no external API calls at runtime.
+Track data (outlines, metadata, lap records, DRS zones, history) sourced from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits). The optional "Race Pace" feature fetches live telemetry from [OpenF1](https://openf1.org) (2023+ circuits only, cached in localStorage).
 
 ## Features
 

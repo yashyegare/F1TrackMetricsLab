@@ -90,13 +90,13 @@ const CIRCUIT_MAP = {
   'mc-1929': 'Monte Carlo',   // Circuit de Monaco
   'ca-1978': 'Montreal',      // Circuit Gilles-Villeneuve
   'at-1969': 'Spielberg',     // Red Bull Ring
-  'gb-1947': 'Silverstone',   // Silverstone Circuit
+  'gb-1948': 'Silverstone',   // Silverstone Circuit
   'be-1925': 'Spa-Francorchamps', // Circuit de Spa-Francorchamps
   'nl-1948': 'Zandvoort',     // Circuit Zandvoort
   'it-1922': 'Monza',         // Autodromo Nazionale Monza
   'sg-2008': 'Singapore',     // Marina Bay Street Circuit
   'jp-1962': 'Suzuka',        // Suzuka International Racing Course
-  'mx-1959': 'Mexico City',   // Autódromo Hermanos Rodríguez
+  'mx-1962': 'Mexico City',   // Autódromo Hermanos Rodríguez
   'br-1940': 'Interlagos',    // Autódromo José Carlos Pace
   'us-2023': 'Las Vegas',     // Las Vegas Street Circuit
   'qa-2004': 'Lusail',        // Losail International Circuit
@@ -104,7 +104,7 @@ const CIRCUIT_MAP = {
   'sa-2021': 'Jeddah',        // Jeddah Corniche Circuit
   'au-1953': 'Melbourne',     // Albert Park Circuit
   'cn-2004': 'Shanghai',      // Shanghai International Circuit
-  'bh-2004': 'Sakhir',        // Bahrain International Circuit
+  'bh-2002': 'Sakhir',        // Bahrain International Circuit
   'us-2022': 'Miami',         // Miami International Autodrome
 };
 

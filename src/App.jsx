@@ -73,9 +73,9 @@ function findSimilarTracks(circuit, all, count = 4) {
     .map(c => {
       // Score based on length similarity, corner count (approx from coords), direction
       const lengthScore = 1 - Math.min(Math.abs((c.length ?? 0) - (circuit.length ?? 0)) / Math.max(circuit.length ?? 1, 1), 1);
-      const coordScore = 1 - Math.min(Math.abs((c.coordinates?.length ?? 0) - (c.coordinates?.length ?? 0)) / Math.max(circuit.coordinates?.length ?? 1, 1), 1);
-      const altitudeScore = c.continent === circuit.continent ? 0.2 : 0;
-      const total = lengthScore * 0.5 + coordScore * 0.3 + altitudeScore;
+      const coordScore = 1 - Math.min(Math.abs((c.coordinates?.length ?? 0) - (circuit.coordinates?.length ?? 0)) / Math.max(circuit.coordinates?.length ?? 1, 1), 1);
+      const continentScore = c.continent === circuit.continent ? 0.2 : 0;
+      const total = lengthScore * 0.5 + coordScore * 0.3 + continentScore;
       return { circuit: c, score: total };
     })
     .sort((a, b) => b.score - a.score);
@@ -228,26 +228,6 @@ export default function App() {
     writeURLParams({ circuit: selectedId, mode, vs: mode !== 'map' ? compareId : undefined });
   }, [selectedId, compareId, mode]);
 
-  // --- Keyboard shortcuts ---
-  useEffect(() => {
-    function onKey(e) {
-      const tag = e.target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === 'k' && (e.metaKey || e.ctrlKey))) {
-        e.preventDefault(); setCmdOpen(o => !o); return;
-      }
-      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus(); return; }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        e.preventDefault();
-        const idx = circuits.findIndex(c => c.id === selectedId);
-        const next = e.key === 'ArrowRight' ? (idx + 1) % circuits.length : (idx - 1 + circuits.length) % circuits.length;
-        setSelectedId(circuits[next].id);
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId]);
-
   const selected = useMemo(() => circuits.find(c => c.id === selectedId), [selectedId]);
   const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId), [compareId]);
   const positions = useMemo(() => (selected ? selected.coordinates.map(([lon, lat]) => [lat, lon]) : []), [selected]);
@@ -284,6 +264,29 @@ export default function App() {
     }
     return sorted;
   }, [query, filterContinent, sortBy]);
+
+  // --- Keyboard shortcuts (after filtered is defined so arrow keys use filtered list) ---
+  useEffect(() => {
+    function onKey(e) {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault(); setCmdOpen(o => !o); return;
+      }
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus(); return; }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const list = filtered.length > 0 ? filtered : circuits;
+        const idx = list.findIndex(c => c.id === selectedId);
+        const next = e.key === 'ArrowRight'
+          ? (idx + 1) % list.length
+          : (idx - 1 + list.length) % list.length;
+        setSelectedId(list[next].id);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId, filtered]);
 
   const toggleUnit = () => setUnit(u => u === 'metric' ? 'imperial' : 'metric');
 

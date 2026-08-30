@@ -473,7 +473,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
-        autoRotate
+        autoRotate={!sharedCameraRef?._instanceId}
         autoRotateSpeed={0.5}
         minDistance={diag * 0.15}
         maxDistance={diag * 2.4}
