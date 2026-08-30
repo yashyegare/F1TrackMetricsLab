@@ -659,6 +659,70 @@ body {
   color: white;
 }
 
+.anim-btn.telemetry-active {
+  background: #0066ff;
+  border-color: #0066ff;
+  color: white;
+}
+
+.telemetry-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.telemetry-year-select {
+  background: #1a1a1f;
+  border: 1px solid #3a3a42;
+  border-radius: 6px;
+  color: #d8d8db;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.telemetry-year-select:focus {
+  outline: none;
+  border-color: #0066ff;
+}
+
+.telemetry-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 255, 136, 0.08);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: #00ff88;
+  margin-bottom: 8px;
+}
+
+.telemetry-badge.loading {
+  color: #66aaff;
+  background: rgba(102, 170, 255, 0.08);
+  border-color: rgba(102, 170, 255, 0.2);
+}
+
+.telemetry-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+  flex-shrink: 0;
+}
+
+.telemetry-badge-dot.loading {
+  background: #66aaff;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
 /* ---- Overlay 3D ---- */
 
 .overlay-3d-container {

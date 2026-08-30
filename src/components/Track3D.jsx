@@ -4,6 +4,7 @@ import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@rea
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
+import { speedToColor } from '../utils/telemetryProject';
 
 // --- Elevation computation ---------------------------------------------------
 
@@ -181,9 +182,72 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1 
   );
 }
 
+// --- Telemetry speed-colored center line ---
+
+function TelemetrySpeedLine({ points, elevation, binned, trackWidth }) {
+  // Create colored line segments from binned telemetry data
+  const segments = useMemo(() => {
+    if (!binned || binned.length === 0) return [];
+
+    const n = points.length;
+    const segs = [];
+
+    // Group consecutive points by their speed color
+    for (let i = 0; i < n; i++) {
+      const progress = i / n;
+      const binIdx = Math.min(Math.floor(progress * binned.length), binned.length - 1);
+      const bin = binned[binIdx];
+      const color = speedToColor(bin.avgSpeed, 50, 330);
+
+      segs.push({
+        point: [points[i][0], (elevation[i] ?? 0) + 0.15, points[i][1]],
+        color,
+      });
+    }
+
+    // Group into runs of same color
+    const runs = [];
+    let currentRun = null;
+    for (const seg of segs) {
+      if (!currentRun || currentRun.color !== seg.color) {
+        if (currentRun) runs.push(currentRun);
+        currentRun = { color: seg.color, points: [seg.point] };
+      } else {
+        currentRun.points.push(seg.point);
+      }
+    }
+    if (currentRun) runs.push(currentRun);
+
+    // Add one extra point to each run for overlap (avoids gaps)
+    return runs.map((run, i) => {
+      const pts = [...run.points];
+      // Connect to next run's first point for smoothness
+      if (i < runs.length - 1 && runs[i + 1].points.length > 0) {
+        pts.push(runs[i + 1].points[0]);
+      }
+      return { points: pts, color: run.color };
+    }).filter(r => r.points.length >= 2);
+  }, [points, elevation, binned]);
+
+  return (
+    <>
+      {segments.map((seg, i) => (
+        <Line
+          key={`speed-${i}`}
+          points={seg.points}
+          color={seg.color}
+          lineWidth={trackWidth * 0.04}
+          transparent
+          opacity={0.9}
+        />
+      ))}
+    </>
+  );
+}
+
 // --- Track scene -------------------------------------------------------------
 
-function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom }) {
+function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom, telemetry }) {
   const { points, corners } = detail;
   const controlsRef = useRef();
   const { camera } = useThree();
@@ -321,6 +385,11 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
       <Line points={rightLoop} color="#f2f2f2" lineWidth={1.2} transparent opacity={0.55} />
       <Line points={centerLoop} color={accentColor} lineWidth={1.4} dashed dashSize={trackWidth * 0.4} gapSize={trackWidth * 0.4} />
 
+      {/* Telemetry speed-colored center line */}
+      {telemetry && telemetry.binned && (
+        <TelemetrySpeedLine points={points} elevation={elevation} binned={telemetry.binned} trackWidth={trackWidth} />
+      )}
+
       {/* DRS zone highlights */}
       {drsLines.map((pts, i) => (
         <Line key={`drs-${i}`} points={pts} color="#00ff88" lineWidth={2.5} transparent opacity={0.6} />
@@ -383,7 +452,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
 export default function Track3D({
   detail, accentColor = '#e10600', height = 420, altitude, circuitId, drsZones = 0,
   sharedCameraRef, instanceId, animSpeed = 0, animPaused = false,
-  canvasRef: externalCanvasRef,
+  canvasRef: externalCanvasRef, telemetry = null,
 }) {
   const { points } = detail;
   const internalCanvasRef = useRef();
@@ -424,6 +493,7 @@ export default function Track3D({
           instanceId={instanceId}
           animSpeed={animSpeed}
           animPaused={animPaused}
+          telemetry={telemetry}
         />
       </Canvas>
     </div>
