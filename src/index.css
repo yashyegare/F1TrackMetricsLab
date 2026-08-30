@@ -451,6 +451,40 @@ body {
   font-weight: 600;
 }
 
+/* Speed legend for telemetry ribbon */
+.speed-legend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  max-width: 400px;
+  margin: 12px auto 0;
+}
+
+.speed-legend-label {
+  font-size: 10px;
+  color: #8a8a90;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.speed-legend-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #3737c8, #5b5ba4, #92926d, #c8c837, #ffff00, #ffc800, #ff9200, #ff5b00, #ff3700, #ff0900);
+}
+
+.speed-legend-ticks {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 9px;
+  color: #6a6a70;
+}
+
 .compare-note {
   max-width: 500px;
   text-align: center;

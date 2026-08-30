@@ -4,6 +4,7 @@ import circuits from './data/circuits.json';
 import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
+import { getTrackDetail } from './utils/track3d';
 
 const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'));
 
@@ -15,6 +16,10 @@ function readURLParams() {
     circuit: p.get('circuit') || null,
     mode: p.get('mode') || null,
     vs: p.get('vs') || null,
+    racePace: p.get('racePace') === '1' || p.get('racePace') === 'true',
+    year: p.get('year') ? Number(p.get('year')) : null,
+    driverA: p.get('driverA') ? Number(p.get('driverA')) : null,
+    driverB: p.get('driverB') ? Number(p.get('driverB')) : null,
   };
 }
 
@@ -68,14 +73,16 @@ const CONTINENTS = ['All', 'Europe', 'Asia', 'North America', 'South America', '
 
 function findSimilarTracks(circuit, all, count = 4) {
   if (!circuit) return [];
+  const circuitDetail = getTrackDetail(circuit);
   const scored = all
     .filter(c => c.id !== circuit.id)
     .map(c => {
-      // Score based on length similarity, corner count (approx from coords), direction
+      const detail = getTrackDetail(c);
       const lengthScore = 1 - Math.min(Math.abs((c.length ?? 0) - (circuit.length ?? 0)) / Math.max(circuit.length ?? 1, 1), 1);
-      const coordScore = 1 - Math.min(Math.abs((c.coordinates?.length ?? 0) - (circuit.coordinates?.length ?? 0)) / Math.max(circuit.coordinates?.length ?? 1, 1), 1);
-      const continentScore = c.continent === circuit.continent ? 0.2 : 0;
-      const total = lengthScore * 0.5 + coordScore * 0.3 + continentScore;
+      const cornerScore = 1 - Math.min(Math.abs(detail.corners.length - circuitDetail.corners.length) / Math.max(circuitDetail.corners.length, 1), 1);
+      const dirScore = detail.direction === circuitDetail.direction ? 0.15 : 0;
+      const continentScore = c.continent === circuit.continent ? 0.1 : 0;
+      const total = lengthScore * 0.4 + cornerScore * 0.35 + dirScore + continentScore;
       return { circuit: c, score: total };
     })
     .sort((a, b) => b.score - a.score);
@@ -210,6 +217,12 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(initial.selectedId);
   const [compareId, setCompareId] = useState(initial.compareId);
   const [query, setQuery] = useState('');
+  const initialTelemetry = useMemo(() => ({
+    racePace: urlParams.racePace || false,
+    year: urlParams.year || 2024,
+    driverA: urlParams.driverA || null,
+    driverB: urlParams.driverB || null,
+  }), []);
   const [unit, setUnit] = useState(() => loadState('f1_unit', 'metric'));
   const [filterContinent, setFilterContinent] = useState('All');
   const [sortBy, setSortBy] = useState('name');
@@ -414,7 +427,7 @@ export default function App() {
           <ComparePanel primary={selected} secondary={compareCircuit} unit={unit} />
         ) : (
           <Suspense fallback={<div className="loading-3d">Loading 3D view…</div>}>
-            <Compare3DPanel primary={selected} secondary={compareCircuit} unit={unit} />
+            <Compare3DPanel primary={selected} secondary={compareCircuit} unit={unit} initialTelemetry={initialTelemetry} />
           </Suspense>
         )}
         <div className="disclaimer">

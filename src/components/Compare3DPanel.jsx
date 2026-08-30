@@ -16,7 +16,7 @@ function fmtAlt(m, unit) {
   return unit === 'imperial' ? `${(m * 3.28084).toFixed(0)} ft` : `${m} m`;
 }
 
-function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading }) {
+function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, sharedProgressRef }) {
   return (
     <div className="track3d-card">
       <div className="track3d-canvas-wrap-outer" style={{ borderColor: color }}>
@@ -33,6 +33,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
           animPaused={animPaused}
           canvasRef={canvasRef}
           telemetry={telemetry}
+          sharedProgressRef={sharedProgressRef}
         />
       </div>
       <p className="track3d-caption">Drag to rotate • Scroll to zoom • Click corner to focus</p>
@@ -126,12 +127,12 @@ async function fetchDriverTelemetry(circuitId, year, qualiData, driverNumber) {
   return result;
 }
 
-export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) {
+export default function Compare3DPanel({ primary, secondary, unit = 'metric', initialTelemetry }) {
   const [viewMode, setViewMode] = useState('sidebyside');
   const [animSpeed, setAnimSpeed] = useState(0);
   const [animPaused, setAnimPaused] = useState(false);
-  const [telemetryMode, setTelemetryMode] = useState(false);
-  const [telemetryYear, setTelemetryYear] = useState(2024);
+  const [telemetryMode, setTelemetryMode] = useState(initialTelemetry?.racePace ?? false);
+  const [telemetryYear, setTelemetryYear] = useState(initialTelemetry?.year || 2024);
   const [primaryTelemetry, setPrimaryTelemetry] = useState(null);
   const [secondaryTelemetry, setSecondaryTelemetry] = useState(null);
   const [primaryLoading, setPrimaryLoading] = useState(false);
@@ -145,11 +146,32 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
   const primaryQualiData = useRef(null);
   const secondaryQualiData = useRef(null);
 
+  // Sync telemetry state to URL for deep linking
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (telemetryMode) {
+      p.set('racePace', '1');
+      p.set('year', String(telemetryYear));
+      if (primaryDriver != null) p.set('driverA', String(primaryDriver));
+      if (secondaryDriver != null) p.set('driverB', String(secondaryDriver));
+    } else {
+      p.delete('racePace');
+      p.delete('year');
+      p.delete('driverA');
+      p.delete('driverB');
+    }
+    const qs = p.toString();
+    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', url);
+  }, [telemetryMode, telemetryYear, primaryDriver, secondaryDriver]);
+
   const primaryDetail = useMemo(() => getTrackDetail(primary), [primary]);
   const secondaryDetail = useMemo(() => getTrackDetail(secondary), [secondary]);
 
   // Shared camera state for sync
   const sharedCameraRef = useRef({ position: null, target: null, _instanceId: null, _targetId: null });
+  // Shared animation progress for syncing CarDots in side-by-side
+  const sharedProgressRef = useRef({ progress: 0, active: false });
 
   // Canvas refs for screenshot
   const primaryCanvasRef = useRef();
@@ -459,6 +481,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={primaryCanvasRef}
               telemetry={primaryTelemetry} telemetryLoading={primaryLoading}
+              sharedProgressRef={sharedProgressRef}
             />
             <StatCard
               circuit={secondary} detail={secondaryDetail} color="#00a3ff" unit={unit}
@@ -466,6 +489,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={secondaryCanvasRef}
               telemetry={secondaryTelemetry} telemetryLoading={secondaryLoading}
+              sharedProgressRef={sharedProgressRef}
             />
           </div>
         ) : (
@@ -516,6 +540,19 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
                 </select>
               </div>
             )}
+          </div>
+        )}
+
+        {telemetryMode && (
+          <div className="speed-legend">
+            <span className="speed-legend-label">Speed</span>
+            <div className="speed-legend-bar" />
+            <div className="speed-legend-ticks">
+              <span>80 km/h</span>
+              <span>160</span>
+              <span>240</span>
+              <span>320+</span>
+            </div>
           </div>
         )}
 

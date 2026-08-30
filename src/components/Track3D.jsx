@@ -148,10 +148,11 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
  *      so the dot slows in corners and surges on straights.
  */
 function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
-  telemetryDates, progressValues, lapDuration }) {
+  telemetryDates, progressValues, lapDuration, sharedProgressRef, instanceId }) {
   const groupRef = useRef();
   const progressRef = useRef(Math.random());
   const elapsedRef = useRef(0);
+  const isLeader = instanceId === 'A';
   const hasTimeline = telemetryDates && telemetryDates.length > 1 && lapDuration > 0;
 
   // Precompute date→ms array for timeline mode
@@ -177,9 +178,7 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
     if (hasTimeline && timelineMs) {
       // Variable-speed mode: advance by real elapsed time × speed multiplier
       elapsedRef.current += dt * speed * 1000; // ms
-      // Scale elapsed to fit within the timeline
       const scaledMs = elapsedRef.current % (lapDuration * 1000);
-      // Find progress via binary-ish search on timelineMs
       let lo = 0, hi = timelineMs.length - 1;
       while (lo < hi) {
         const mid = (lo + hi) >> 1;
@@ -189,6 +188,16 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
     } else {
       // Constant speed mode
       progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
+    }
+
+    // Sync: leader writes to shared, follower reads from shared
+    if (sharedProgressRef) {
+      if (isLeader) {
+        sharedProgressRef.current.progress = progressRef.current;
+        sharedProgressRef.current.active = speed > 0 && !paused;
+      } else if (sharedProgressRef.current.active) {
+        progressRef.current = sharedProgressRef.current.progress;
+      }
     }
 
     const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
@@ -280,7 +289,7 @@ function TelemetrySpeedLine({ points, elevation, binned, trackWidth }) {
 
 // --- Track scene -------------------------------------------------------------
 
-function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom, telemetry }) {
+function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom, telemetry, sharedProgressRef }) {
   const { points, corners } = detail;
   const controlsRef = useRef();
   const { camera } = useThree();
@@ -447,6 +456,8 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         telemetryDates={telemetry?.projected?.map(p => p.date)}
         progressValues={telemetry?.projected?.map(p => p.progress)}
         lapDuration={telemetry?.lap?.duration}
+        sharedProgressRef={sharedProgressRef}
+        instanceId={instanceId}
       />
 
       <Billboard position={[0, poleHeight * 1.6 + (hasElevation ? 1 : 0), 0]}>
@@ -489,7 +500,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
 export default function Track3D({
   detail, accentColor = '#e10600', height = 420, altitude, circuitId, drsZones = 0,
   sharedCameraRef, instanceId, animSpeed = 0, animPaused = false,
-  canvasRef: externalCanvasRef, telemetry = null,
+  canvasRef: externalCanvasRef, telemetry = null, sharedProgressRef = null,
 }) {
   const { points } = detail;
   const internalCanvasRef = useRef();
@@ -531,6 +542,7 @@ export default function Track3D({
           animSpeed={animSpeed}
           animPaused={animPaused}
           telemetry={telemetry}
+          sharedProgressRef={sharedProgressRef}
         />
       </Canvas>
     </div>
