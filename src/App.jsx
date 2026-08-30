@@ -1,56 +1,12 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useCallback } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import circuits from './data/circuits.json';
 import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
-import { getTrackDetail } from './utils/track3d';
+import { useStore } from './store';
 
 const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'));
-
-// --- URL / deep-link helpers -------------------------------------------------
-
-function readURLParams() {
-  const p = new URLSearchParams(window.location.search);
-  return {
-    circuit: p.get('circuit') || null,
-    mode: p.get('mode') || null,
-    vs: p.get('vs') || null,
-    racePace: p.get('racePace') === '1' || p.get('racePace') === 'true',
-    year: p.get('year') ? Number(p.get('year')) : null,
-    driverA: p.get('driverA') ? Number(p.get('driverA')) : null,
-    driverB: p.get('driverB') ? Number(p.get('driverB')) : null,
-  };
-}
-
-function writeURLParams(params) {
-  const p = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v); });
-  const qs = p.toString();
-  const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-  window.history.replaceState(null, '', url);
-}
-
-// --- localStorage helpers ----------------------------------------------------
-
-function loadState(key, fallback) {
-  try { const r = localStorage.getItem(key); return r !== null ? JSON.parse(r) : fallback; } catch { return fallback; }
-}
-function saveState(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
-
-// --- Unit helpers ------------------------------------------------------------
-
-function kmToMi(km) { return km * 0.621371; }
-function mToFt(m) { return m * 3.28084; }
-function formatLength(meters, unit) {
-  if (meters == null) return '—';
-  const km = meters / 1000;
-  return unit === 'imperial' ? `${kmToMi(km).toFixed(2)} mi` : `${km.toFixed(3)} km`;
-}
-function formatAltitude(meters, unit) {
-  if (meters == null) return '—';
-  return unit === 'imperial' ? `${mToFt(meters).toFixed(0)} ft` : `${meters} m`;
-}
 
 // --- Sort helpers ------------------------------------------------------------
 
@@ -96,12 +52,7 @@ function TrackHistory({ history }) {
   const years = history.yearsHosted;
   const minYear = Math.min(...years);
   const maxYear = Math.max(...years);
-  // Find gaps (years not hosted)
   const hostedSet = new Set(years);
-  const gaps = [];
-  for (let y = minYear; y <= maxYear; y++) {
-    if (!hostedSet.has(y)) gaps.push(y);
-  }
   return (
     <div className="track-history">
       <div className="history-bar">
@@ -117,10 +68,22 @@ function TrackHistory({ history }) {
   );
 }
 
+// --- Unit helpers ------------------------------------------------------------
+
+function formatLength(meters, unit) {
+  if (meters == null) return '—';
+  const km = meters / 1000;
+  return unit === 'imperial' ? `${(km * 0.621371).toFixed(2)} mi` : `${km.toFixed(3)} km`;
+}
+function formatAltitude(meters, unit) {
+  if (meters == null) return '—';
+  return unit === 'imperial' ? `${(meters * 3.28084).toFixed(0)} ft` : `${meters} m`;
+}
+
 // --- Info panel (map mode) ---------------------------------------------------
 
 function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = React.useState(false);
   const similar = useMemo(() => findSimilarTracks(circuit, allCircuits), [circuit, allCircuits]);
   return (
     <div className={`info-panel${expanded ? ' expanded' : ''}`}>
@@ -172,119 +135,83 @@ function FlyToCircuit({ circuit }) {
   return null;
 }
 
+// Lazy import for getTrackDetail
+let _getTrackDetail;
+function getTrackDetail(circuit) {
+  if (!_getTrackDetail) {
+    // Sync import — the module is already loaded by the time this runs
+    _getTrackDetail = require('./utils/track3d').getTrackDetail;
+  }
+  return _getTrackDetail(circuit);
+}
+
 export default function App() {
-  // --- Deep link: resolve initial state from URL, then fallback to localStorage / defaults ---
-  const urlParams = useMemo(readURLParams, []);
-
-  const resolveInitial = useCallback((list) => {
-    let sid = circuits[0].id;
-    let cid = circuits[1].id;
-    let mode = 'map';
-
-    // Deep link overrides
-    if (urlParams.circuit) {
-      const match = list.find(c => c.id === urlParams.circuit || c.name.toLowerCase().replace(/\s+/g, '-') === urlParams.circuit);
-      if (match) sid = match.id;
-    }
-    if (urlParams.vs) {
-      const match = list.find(c => c.id === urlParams.vs || c.name.toLowerCase().replace(/\s+/g, '-') === urlParams.vs);
-      if (match) cid = match.id;
-    }
-    if (urlParams.mode && ['map', 'compare', 'compare3d'].includes(urlParams.mode)) {
-      mode = urlParams.mode;
-    } else {
-      // No URL mode — use localStorage or default
-      mode = loadState('f1_mode', 'map');
-    }
-
-    // If URL had circuit info, also save to localStorage for persistence
-    if (urlParams.circuit || urlParams.vs) {
-      saveState('f1_selected', sid);
-      saveState('f1_compare', cid);
-      saveState('f1_mode', mode);
-    } else {
-      sid = loadState('f1_selected', circuits[0].id);
-      cid = loadState('f1_compare', circuits[1].id);
-    }
-
-    return { selectedId: sid, compareId: cid, mode };
-  }, [urlParams]);
-
-  const initial = useMemo(() => resolveInitial(circuits), [resolveInitial]);
-
-  const [mode, setMode] = useState(initial.mode);
-  const [basemap, setBasemap] = useState('street');
-  const [selectedId, setSelectedId] = useState(initial.selectedId);
-  const [compareId, setCompareId] = useState(initial.compareId);
-  const [query, setQuery] = useState('');
-  const initialTelemetry = useMemo(() => ({
-    racePace: urlParams.racePace || false,
-    year: urlParams.year || 2024,
-    driverA: urlParams.driverA || null,
-    driverB: urlParams.driverB || null,
-  }), []);
-  const [unit, setUnit] = useState(() => loadState('f1_unit', 'metric'));
-  const [filterContinent, setFilterContinent] = useState('All');
-  const [sortBy, setSortBy] = useState('name');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [cmdOpen, setCmdOpen] = useState(false);
   const searchRef = useRef(null);
 
-  // --- Persist state changes ---
-  useEffect(() => { saveState('f1_mode', mode); }, [mode]);
-  useEffect(() => { saveState('f1_selected', selectedId); }, [selectedId]);
-  useEffect(() => { saveState('f1_compare', compareId); }, [compareId]);
-  useEffect(() => { saveState('f1_unit', unit); }, [unit]);
+  // Zustand store selectors — only re-render when the selected slice changes
+  const mode = useStore(s => s.mode);
+  const selectedId = useStore(s => s.selectedId);
+  const compareId = useStore(s => s.compareId);
+  const unit = useStore(s => s.unit);
+  const basemap = useStore(s => s.basemap);
+  const sidebarOpen = useStore(s => s.sidebarOpen);
+  const cmdOpen = useStore(s => s.cmdOpen);
+  const query = useStore(s => s.query);
+  const filterContinent = useStore(s => s.filterContinent);
+  const sortBy = useStore(s => s.sortBy);
 
-  // --- Deep link: sync state to URL ---
-  useEffect(() => {
-    writeURLParams({ circuit: selectedId, mode, vs: mode !== 'map' ? compareId : undefined });
-  }, [selectedId, compareId, mode]);
+  const setMode = useStore(s => s.setMode);
+  const setSelectedId = useStore(s => s.setSelectedId);
+  const setCompareId = useStore(s => s.setCompareId);
+  const setUnit = useStore(s => s.setUnit);
+  const setBasemap = useStore(s => s.setBasemap);
+  const setSidebarOpen = useStore(s => s.setSidebarOpen);
+  const setCmdOpen = useStore(s => s.setCmdOpen);
+  const toggleCmdOpen = useStore(s => s.toggleCmdOpen);
+  const setQuery = useStore(s => s.setQuery);
+  const setFilterContinent = useStore(s => s.setFilterContinent);
+  const setSortBy = useStore(s => s.setSortBy);
+  const selectCircuit = useStore(s => s.selectCircuit);
 
+  // Derived state
   const selected = useMemo(() => circuits.find(c => c.id === selectedId), [selectedId]);
   const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId), [compareId]);
   const positions = useMemo(() => (selected ? selected.coordinates.map(([lon, lat]) => [lat, lon]) : []), [selected]);
 
+  const initialTelemetry = useMemo(() => {
+    const url = new URLSearchParams(window.location.search);
+    return {
+      racePace: url.get('racePace') === '1',
+      year: url.get('year') ? Number(url.get('year')) : 2024,
+      driverA: url.get('driverA') ? Number(url.get('driverA')) : null,
+      driverB: url.get('driverB') ? Number(url.get('driverB')) : null,
+    };
+  }, []);
+
   // --- Filter + sort ---
   const filtered = useMemo(() => {
     let list = circuits;
-
-    // Text search
     const q = query.trim().toLowerCase();
     if (q) list = list.filter(c => c.location?.toLowerCase().includes(q) || c.name?.toLowerCase().includes(q));
-
-    // Continent filter
     if (filterContinent !== 'All') list = list.filter(c => c.continent === filterContinent);
-
-    // Sort
     const sorted = [...list];
     switch (sortBy) {
-      case 'opened':
-        sorted.sort((a, b) => (a.opened ?? 9999) - (b.opened ?? 9999));
-        break;
-      case 'length':
-        sorted.sort((a, b) => (b.length ?? 0) - (a.length ?? 0));
-        break;
-      case 'corners':
-        // Approximate from coordinate count (higher = more corners)
-        sorted.sort((a, b) => (b.coordinates?.length ?? 0) - (a.coordinates?.length ?? 0));
-        break;
-      case 'continent':
-        sorted.sort((a, b) => (a.continent || '').localeCompare(b.continent || '') || a.name.localeCompare(b.name));
-        break;
-      default: // name
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'opened': sorted.sort((a, b) => (a.opened ?? 9999) - (b.opened ?? 9999)); break;
+      case 'length': sorted.sort((a, b) => (b.length ?? 0) - (a.length ?? 0)); break;
+      case 'corners': sorted.sort((a, b) => (b.coordinates?.length ?? 0) - (a.coordinates?.length ?? 0)); break;
+      case 'continent': sorted.sort((a, b) => (a.continent || '').localeCompare(b.continent || '') || a.name.localeCompare(b.name)); break;
+      default: sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
     return sorted;
   }, [query, filterContinent, sortBy]);
 
-  // --- Keyboard shortcuts (after filtered is defined so arrow keys use filtered list) ---
+  // --- Keyboard shortcuts ---
   useEffect(() => {
     function onKey(e) {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault(); setCmdOpen(o => !o); return;
+        e.preventDefault(); toggleCmdOpen(); return;
       }
       if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus(); return; }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
@@ -299,23 +226,17 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, filtered]);
+  }, [selectedId, filtered, toggleCmdOpen, setSelectedId]);
 
-  const toggleUnit = () => setUnit(u => u === 'metric' ? 'imperial' : 'metric');
-
-  // Close sidebar on mobile when selecting a circuit
-  const selectCircuit = (id) => { setSelectedId(id); setSidebarOpen(false); };
-
-  // Command palette: select circuit and ensure we're in compare3d mode
   const handleCmdSelect = useCallback((id) => {
     setSelectedId(id);
     if (mode === 'map') setMode('compare3d');
-  }, [mode]);
+  }, [mode, setSelectedId, setMode]);
 
   return (
     <div className="app">
       {/* Mobile hamburger */}
-      <button className="hamburger" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle sidebar">
+      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
         {sidebarOpen ? '✕' : '☰'}
       </button>
 

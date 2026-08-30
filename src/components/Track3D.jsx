@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useCallback, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@react-three/drei';
+import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard, Text } from '@react-three/drei';
+// postprocessing deferred — peer dep conflicts with current R3F version
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
@@ -131,9 +132,11 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
         <cylinderGeometry args={[poleHeight * 0.015, poleHeight * 0.015, poleHeight * 0.62, 6]} />
         <meshStandardMaterial color="#3a3a40" />
       </mesh>
-      <Html position={[0, poleHeight * 0.98, 0]} center distanceFactor={poleHeight * 26} occlude={false}>
-        <div className="startfinish-pill">START / FINISH</div>
-      </Html>
+      <Billboard position={[0, poleHeight * 0.98, 0]}>
+        <Text fontSize={poleHeight * 0.06} color="#f2f2f2" anchorX="center" anchorY="middle" outlineWidth={0.3} outlineColor="#000">
+          START / FINISH
+        </Text>
+      </Billboard>
     </group>
   );
 }
@@ -293,6 +296,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
   const { points, corners } = detail;
   const controlsRef = useRef();
   const { camera } = useThree();
+  const prevCircuitRef = useRef(circuitId);
 
   const bbox = useMemo(() => {
     const xs = points.map((p) => p[0]);
@@ -303,6 +307,32 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
   const diag = Math.hypot(bbox.width, bbox.depth) || 1000;
   const trackWidth = Math.min(Math.max(diag * 0.006, 40), 220);
   const poleHeight = Math.min(Math.max(diag * 0.02, 26), 90);
+
+  // Cinematic camera transition when circuit changes
+  useEffect(() => {
+    if (prevCircuitRef.current === circuitId) return;
+    prevCircuitRef.current = circuitId;
+    const radius = (diag / 2) * 1.25;
+    const distance = radius / Math.sin((42 / 2) * (Math.PI / 180));
+    const dir = new THREE.Vector3(0.5, 0.8, 0.5).normalize().multiplyScalar(distance);
+    const targetPos = dir;
+    const targetLook = new THREE.Vector3(0, 0, 0);
+    const startPos = camera.position.clone();
+    const startTarget = controlsRef.current?.target.clone() || new THREE.Vector3();
+    const startTime = performance.now();
+    const duration = 800;
+    function animate() {
+      const t = Math.min((performance.now() - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      camera.position.lerpVectors(startPos, targetPos, ease);
+      if (controlsRef.current) {
+        controlsRef.current.target.lerpVectors(startTarget, targetLook, ease);
+        controlsRef.current.update();
+      }
+      if (t < 1) requestAnimationFrame(animate);
+    }
+    animate();
+  }, [circuitId, diag, camera]);
 
   const elevation = useMemo(() => computeElevation(points, corners, altitude), [points, corners, altitude]);
   const hasElevation = altitude != null && altitude !== 0;
@@ -461,9 +491,9 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
       />
 
       <Billboard position={[0, poleHeight * 1.6 + (hasElevation ? 1 : 0), 0]}>
-        <Html center distanceFactor={poleHeight * 30} occlude={false}>
-          <div className="track3d-name-pill">{corners.length} corners{hasElevation ? ' • elevation stylized' : ''}</div>
-        </Html>
+        <Text fontSize={poleHeight * 0.05} color="#8a8a90" anchorX="center" anchorY="middle" outlineWidth={0.2} outlineColor="#000">
+          {corners.length} corners{hasElevation ? ' • elevation stylized' : ''}
+        </Text>
       </Billboard>
 
       <Grid
