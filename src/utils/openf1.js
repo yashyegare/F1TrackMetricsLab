@@ -204,7 +204,9 @@ export async function getFastestLapTelemetry(circuitId, year = 2024) {
 
   const location = locationRaw.filter(d => {
     const t = new Date(d.date).getTime();
-    return t >= lapStart && t <= lapEnd && (d.x !== 0 || d.y !== 0);
+    return t >= lapStart && t <= lapEnd
+      && d.x != null && d.y != null
+      && (d.x !== 0 || d.y !== 0);
   });
 
   const carData = carDataRaw.filter(d => {

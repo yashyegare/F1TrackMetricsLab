@@ -130,6 +130,25 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
   const primaryCanvasRef = useRef();
   const secondaryCanvasRef = useRef();
 
+  // Projection cache: avoids re-running the expensive rotation search
+  // when toggling telemetry on/off or switching views
+  const projectionCache = useRef(new Map());
+
+  function getCachedProjection(circuitId, year, coordinates, telemetry) {
+    const key = `${circuitId}:${year}:${coordinates.length}`;
+    if (projectionCache.current.has(key)) return projectionCache.current.get(key);
+    const { projected } = projectTelemetry(coordinates, telemetry);
+    const binned = binTelemetry(projected, coordinates.length);
+    const result = { projected, binned };
+    // Keep cache bounded (max 20 entries)
+    if (projectionCache.current.size > 20) {
+      const firstKey = projectionCache.current.keys().next().value;
+      projectionCache.current.delete(firstKey);
+    }
+    projectionCache.current.set(key, result);
+    return result;
+  }
+
   // Fetch telemetry when mode is enabled
   useEffect(() => {
     if (!telemetryMode) {
@@ -147,8 +166,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
         try {
           const data = await getFastestLapTelemetry(primary.id, telemetryYear);
           if (!cancelled && data) {
-            const { projected } = projectTelemetry(primary.coordinates, data.telemetry);
-            const binned = binTelemetry(projected, primary.coordinates.length);
+            const { projected, binned } = getCachedProjection(primary.id, telemetryYear, primary.coordinates, data.telemetry);
             setPrimaryTelemetry({ ...data, binned, projected });
           }
         } catch (e) {
@@ -162,8 +180,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
         try {
           const data = await getFastestLapTelemetry(secondary.id, telemetryYear);
           if (!cancelled && data) {
-            const { projected } = projectTelemetry(secondary.coordinates, data.telemetry);
-            const binned = binTelemetry(projected, secondary.coordinates.length);
+            const { projected, binned } = getCachedProjection(secondary.id, telemetryYear, secondary.coordinates, data.telemetry);
             setSecondaryTelemetry({ ...data, binned, projected });
           }
         } catch (e) {
