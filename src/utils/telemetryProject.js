@@ -182,6 +182,7 @@ export function projectTelemetry(trackCoords, openf1Telemetry) {
       brake: sample.brake,
       drs: sample.drs,
       gear: sample.gear,
+      date: sample.date,
       raw: { x: sample.x, y: sample.y, z: sample.z },
     };
   });

@@ -229,6 +229,7 @@ export async function getFastestLapTelemetry(circuitId, year = 2024) {
       x: loc.x,
       y: loc.y,
       z: loc.z,
+      date: loc.date,
       speed: closest?.speed ?? 0,
       throttle: closest?.throttle ?? 0,
       brake: closest?.brake ?? 0,

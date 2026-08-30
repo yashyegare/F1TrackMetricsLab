@@ -140,9 +140,26 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
 
 // --- Animated car dot --------------------------------------------------------
 
-function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1 }) {
+/**
+ * CarDot — animates a car along the 3D ribbon.
+ * Two modes:
+ *   1. Constant speed (no telemetry): progress += dt * speed * 0.08
+ *   2. Variable speed (with telemetryDates): maps real elapsed time to progress
+ *      so the dot slows in corners and surges on straights.
+ */
+function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
+  telemetryDates, progressValues, lapDuration }) {
   const groupRef = useRef();
-  const progress = useRef(Math.random());
+  const progressRef = useRef(Math.random());
+  const elapsedRef = useRef(0);
+  const hasTimeline = telemetryDates && telemetryDates.length > 1 && lapDuration > 0;
+
+  // Precompute date→ms array for timeline mode
+  const timelineMs = useMemo(() => {
+    if (!hasTimeline) return null;
+    const t0 = new Date(telemetryDates[0]).getTime();
+    return telemetryDates.map(d => new Date(d).getTime() - t0);
+  }, [telemetryDates, hasTimeline]);
 
   const sphereR = size * 0.45;
   const ringInner = size * 0.3;
@@ -156,14 +173,30 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1 
     }
     groupRef.current.visible = true;
     const dt = Math.min(delta, 0.1);
-    progress.current = (progress.current + dt * speed * 0.08) % 1;
-    const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progress.current);
+
+    if (hasTimeline && timelineMs) {
+      // Variable-speed mode: advance by real elapsed time × speed multiplier
+      elapsedRef.current += dt * speed * 1000; // ms
+      // Scale elapsed to fit within the timeline
+      const scaledMs = elapsedRef.current % (lapDuration * 1000);
+      // Find progress via binary-ish search on timelineMs
+      let lo = 0, hi = timelineMs.length - 1;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (timelineMs[mid] < scaledMs) lo = mid + 1; else hi = mid;
+      }
+      progressRef.current = progressValues[Math.min(lo, progressValues.length - 1)];
+    } else {
+      // Constant speed mode
+      progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
+    }
+
+    const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
     groupRef.current.position.set(pos[0], pos[1], pos[2]);
   });
 
-  // Set initial position once on mount
   const initPos = useMemo(() =>
-    interpolateAlongPath3D(points, elevation, cumulative, total, progress.current),
+    interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current),
     [points, elevation, cumulative, total]
   );
 
@@ -410,7 +443,11 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         />
       ))}
 
-      <CarDot points={points} elevation={elevation} cumulative={cumulative} total={total} speed={animSpeed} paused={animPaused} size={trackWidth} />
+      <CarDot points={points} elevation={elevation} cumulative={cumulative} total={total} speed={animSpeed} paused={animPaused} size={trackWidth}
+        telemetryDates={telemetry?.projected?.map(p => p.date)}
+        progressValues={telemetry?.projected?.map(p => p.progress)}
+        lapDuration={telemetry?.lap?.duration}
+      />
 
       <Billboard position={[0, poleHeight * 1.6 + (hasElevation ? 1 : 0), 0]}>
         <Html center distanceFactor={poleHeight * 30} occlude={false}>
