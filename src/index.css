@@ -660,30 +660,38 @@ body {
 }
 
 .anim-btn.telemetry-active {
-  background: #0066ff;
-  border-color: #0066ff;
+  background: #e10600;
+  border-color: #e10600;
   color: white;
 }
 
 .telemetry-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  padding-left: 10px;
+  border-left: 1px solid #2c2c31;
 }
 
 .telemetry-year-select {
-  background: #1a1a1f;
-  border: 1px solid #3a3a42;
+  background: #1e1e22;
+  border: 1px solid #2c2c31;
   border-radius: 6px;
-  color: #d8d8db;
-  padding: 4px 8px;
-  font-size: 12px;
+  color: #8a8a90;
+  padding: 4px 6px;
+  font-size: 11px;
   cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.telemetry-year-select:hover {
+  border-color: #3a3a42;
+  color: #d8d8db;
 }
 
 .telemetry-year-select:focus {
   outline: none;
-  border-color: #0066ff;
+  border-color: #e10600;
 }
 
 .telemetry-badge {

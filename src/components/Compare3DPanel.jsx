@@ -224,13 +224,13 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric' }) 
             )}
           </div>
 
-          <div className="telemetry-controls">
+          <div className="anim-controls telemetry-controls">
             <button
               className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
               onClick={() => setTelemetryMode(t => !t)}
               title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
             >
-              {telemetryMode ? '⚡ Telemetry' : '📊 Telemetry'}
+              {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
             </button>
             {telemetryMode && (
               <select
