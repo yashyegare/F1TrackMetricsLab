@@ -3,6 +3,7 @@ import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
 import { isTelemetryAvailable, getQualifyingData, getLapTelemetry } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
+import TelemetryScrubber from './TelemetryScrubber';
 
 const Overlay3DPanel = React.lazy(() => import('./Overlay3DPanel.jsx'));
 
@@ -552,6 +553,16 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               </div>
             )}
           </div>
+        )}
+
+        {viewMode === 'sidebyside' && telemetryMode && (
+          <TelemetryScrubber
+            primaryProjected={primaryTelemetry?.projected}
+            secondaryProjected={secondaryTelemetry?.projected}
+            sharedProgressRef={sharedProgressRef}
+            primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
+            secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
+          />
         )}
 
         {telemetryMode && (
