@@ -86,7 +86,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={100}>
-              <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={() => {}}>
+              <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={() => {}} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} unit=" km/h" />
@@ -107,7 +107,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 </span>
               </div>
               <ResponsiveContainer width="100%" height={80}>
-                <AreaChart data={deltaTrace} onMouseMove={handleScrub}>
+                <AreaChart data={deltaTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                   <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                   <YAxis tick={tickStyle} width={40} unit="s" domain={['auto', 'auto']} />
@@ -142,7 +142,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={100}>
-              <AreaChart data={throttleBrakeTrace} onMouseMove={handleScrub}>
+              <AreaChart data={throttleBrakeTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 100]} />
@@ -168,7 +168,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={80}>
-              <LineChart data={gearTrace} onMouseMove={handleScrub}>
+              <LineChart data={gearTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 8]} />

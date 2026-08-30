@@ -216,6 +216,7 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
  * Find the best qualifying session for a circuit+year, preferring main over sprint.
  */
 const qualiCache = new Map();
+const QUALI_CACHE_MAX = 20;
 
 export async function getQualifyingData(circuitId, year = 2024) {
   const cacheKey = `${circuitId}:${year}`;
@@ -240,6 +241,10 @@ export async function getQualifyingData(circuitId, year = 2024) {
   if (laps.length === 0) return null;
 
   const result = { sessions, quali, laps, drivers };
+  if (qualiCache.size >= QUALI_CACHE_MAX) {
+    const oldest = qualiCache.keys().next().value;
+    qualiCache.delete(oldest);
+  }
   qualiCache.set(cacheKey, result);
   return result;
 }
