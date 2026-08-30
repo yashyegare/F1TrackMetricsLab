@@ -220,7 +220,12 @@ const QUALI_CACHE_MAX = 20;
 
 export async function getQualifyingData(circuitId, year = 2024) {
   const cacheKey = `${circuitId}:${year}`;
-  if (qualiCache.has(cacheKey)) return qualiCache.get(cacheKey);
+  if (qualiCache.has(cacheKey)) {
+    const val = qualiCache.get(cacheKey);
+    qualiCache.delete(cacheKey); // bump to most-recently-used
+    qualiCache.set(cacheKey, val);
+    return val;
+  }
 
   const sessions = await getSessions(circuitId, year);
   const allQualis = sessions.filter(s => s.session_type === 'Qualifying');
