@@ -32,19 +32,16 @@ export default function SpeedRibbon({ points, elevation, cumulative, total, proj
     const tubeGeo = new THREE.TubeGeometry(curve, tubeSegments, width, radialSegments, false);
 
     // Map vertex colors from interpolated speed
+    // TubeGeometry vertices are laid out in rings: (radialSegments+1) vertices per ring
+    const vertsPerRing = radialSegments + 1;
+    const numRings = tubeSegments + 1;
     const colorAttr = new Float32Array(tubeGeo.attributes.position.count * 3);
     const color = new THREE.Color();
-    const totalLength = curve.getLength();
-    const posArr = tubeGeo.attributes.position.array;
 
     for (let i = 0; i < tubeGeo.attributes.position.count; i++) {
-      const vx = posArr[i * 3];
-      const vy = posArr[i * 3 + 1];
-      const vz = posArr[i * 3 + 2];
-
-      // Find approximate progress for this vertex by its index
-      // TubeGeometry vertices are laid out in rings along the tube
-      const vertexProgress = i / tubeGeo.attributes.position.count;
+      // Compute progress per ring — all vertices in the same ring get the same color
+      const ringIndex = Math.floor(i / vertsPerRing);
+      const vertexProgress = ringIndex / (numRings - 1);
 
       const sample = interpolateSample(projected, vertexProgress);
       const hex = speedToColor(sample.speed);
