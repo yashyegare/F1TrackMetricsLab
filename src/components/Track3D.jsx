@@ -5,7 +5,7 @@ import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard, Text } from
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
-import { speedToColor } from '../utils/telemetryProject';
+import { speedToColor, interpolateSample } from '../utils/telemetryProject';
 
 // --- Elevation computation ---------------------------------------------------
 
@@ -151,7 +151,7 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
  *      so the dot slows in corners and surges on straights.
  */
 function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
-  telemetryDates, progressValues, lapDuration, sharedProgressRef, instanceId }) {
+  telemetryDates, progressValues, lapDuration, sharedProgressRef, instanceId, projectedTelemetry }) {
   const groupRef = useRef();
   const progressRef = useRef(Math.random());
   const elapsedRef = useRef(0);
@@ -212,16 +212,23 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
     [points, elevation, cumulative, total]
   );
 
+  // Interpolated speed for dynamic color (when telemetry is available)
+  const interpolatedSpeed = useMemo(() => {
+    if (!projectedTelemetry || projectedTelemetry.length === 0) return null;
+    return interpolateSample(projectedTelemetry, progressRef.current);
+  }, [projectedTelemetry]);
+  const dotColor = interpolatedSpeed ? speedToColor(interpolatedSpeed.speed) : '#ffcc00';
+
   return (
     <group ref={groupRef} position={initPos} visible={speed > 0}>
       <mesh>
         <sphereGeometry args={[sphereR, 20, 20]} />
-        <meshStandardMaterial color="#ffcc00" emissive="#ffcc00" emissiveIntensity={2} toneMapped={false} />
+        <meshStandardMaterial color={dotColor} emissive={dotColor} emissiveIntensity={2.5} toneMapped={false} />
       </mesh>
-      <pointLight color="#ffcc00" intensity={sphereR * 80} distance={sphereR * 30} />
+      <pointLight color={dotColor} intensity={sphereR * 80} distance={sphereR * 30} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -sphereR * 0.15, 0]}>
         <ringGeometry args={[ringInner, ringOuter, 24]} />
-        <meshStandardMaterial color="#ffcc00" transparent opacity={0.4} emissive="#ffcc00" emissiveIntensity={0.5} side={THREE.DoubleSide} />
+        <meshStandardMaterial color={dotColor} transparent opacity={0.4} emissive={dotColor} emissiveIntensity={0.5} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -488,6 +495,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         lapDuration={telemetry?.lap?.duration}
         sharedProgressRef={sharedProgressRef}
         instanceId={instanceId}
+        projectedTelemetry={telemetry?.projected}
       />
 
       <Billboard position={[0, poleHeight * 1.6 + (hasElevation ? 1 : 0), 0]}>

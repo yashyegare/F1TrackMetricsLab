@@ -238,6 +238,57 @@ export function binTelemetry(projected, numBins = 100) {
 /**
  * Map a speed value to a color on a blue → yellow → red gradient.
  */
+/**
+ * Catmull-Rom cubic interpolation for smooth telemetry scrubbing.
+ * At 3.7Hz sampling, linear interpolation makes the car appear segmented.
+ * This provides smooth speed/throttle transitions between data points.
+ */
+export function interpolateSample(projected, progress) {
+  const n = projected.length;
+  if (n === 0) return { speed: 0, throttle: 0, brake: 0, drs: 0, gear: 0 };
+  if (n === 1) return projected[0];
+
+  // Find the two bracketing samples
+  let idx = 0;
+  while (idx < n - 1 && projected[idx + 1].progress <= progress) idx++;
+
+  if (idx <= 0) return projected[0];
+  if (idx >= n - 1) return projected[n - 1];
+
+  const p0 = projected[Math.max(0, idx - 1)];
+  const p1 = projected[idx];
+  const p2 = projected[Math.min(n - 1, idx + 1)];
+  const p3 = projected[Math.min(n - 1, idx + 2)];
+
+  const segLen = p2.progress - p1.progress;
+  const t = segLen > 0 ? (progress - p1.progress) / segLen : 0;
+  const t2 = t * t;
+  const t3 = t2 * t;
+
+  // Catmull-Rom blending for speed (cubic smoothstep)
+  const speed = 0.5 * (
+    (2 * p1.speed) +
+    (-p0.speed + p2.speed) * t +
+    (2 * p0.speed - 5 * p1.speed + 4 * p2.speed - p3.speed) * t2 +
+    (-p0.speed + 3 * p1.speed - 3 * p2.speed + p3.speed) * t3
+  );
+
+  // Linear for throttle (step-like control input)
+  const throttle = p1.throttle + (p2.throttle - p1.throttle) * t;
+
+  // Keep sharp brake spikes (brake is binary-feel in racing)
+  const brake = p2.brake > 0 ? p2.brake : p1.brake;
+
+  return {
+    progress,
+    speed: Math.max(0, speed),
+    throttle: Math.max(0, Math.min(100, throttle)),
+    brake,
+    drs: p1.drs,
+    gear: p1.gear,
+  };
+}
+
 export function speedToColor(speed, minSpeed = 0, maxSpeed = 350) {
   const t = Math.max(0, Math.min(1, (speed - minSpeed) / (maxSpeed - minSpeed)));
 

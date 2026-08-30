@@ -1,8 +1,15 @@
 /**
- * OpenF1 API client with localStorage caching.
+ * OpenF1 API client with IndexedDB caching.
  * API docs: https://openf1.org/docs/
  * Free, keyless, CORS-friendly. Data available from 2023 onward.
+ *
+ * Uses idb-keyval (IndexedDB) instead of localStorage:
+ * - Async: no main-thread blocking on JSON.parse/stringify
+ * - Virtually unlimited storage (vs 5MB localStorage limit)
+ * - Handles large telemetry arrays without truncation
  */
+
+import { get, set, del, keys } from 'idb-keyval';
 
 const BASE = 'https://api.openf1.org/v1';
 const CACHE_PREFIX = 'openf1_';
@@ -17,41 +24,38 @@ function cacheKey(endpoint, params) {
   return `${CACHE_PREFIX}${endpoint}_${sorted}`;
 }
 
-function getCached(key) {
+async function getCached(key) {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const { data, ts } = JSON.parse(raw);
-    if (Date.now() - ts > CACHE_TTL) {
-      localStorage.removeItem(key);
+    const cached = await get(key);
+    if (!cached) return null;
+    if (Date.now() - cached.ts > CACHE_TTL) {
+      await del(key);
       return null;
     }
-    return data;
+    return cached.data;
   } catch {
     return null;
   }
 }
 
-function setCache(key, data) {
+async function setCache(key, data) {
   try {
-    localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    await set(key, { data, ts: Date.now() });
   } catch {
-    // Storage full — clear old entries
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k?.startsWith(CACHE_PREFIX)) keys.push(k);
-    }
-    keys.sort().slice(0, Math.floor(keys.length / 2)).forEach(k => localStorage.removeItem(k));
+    // Storage full — clear oldest half
     try {
-      localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+      const allKeys = await keys();
+      const cacheKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(CACHE_PREFIX)).sort();
+      const toRemove = cacheKeys.slice(0, Math.floor(cacheKeys.length / 2));
+      await Promise.all(toRemove.map(k => del(k)));
+      await set(key, { data, ts: Date.now() });
     } catch { /* give up */ }
   }
 }
 
 async function fetchAPI(endpoint, params = {}, retries = 3) {
   const key = cacheKey(endpoint, params);
-  const cached = getCached(key);
+  const cached = await getCached(key);
   if (cached) return cached;
 
   const qs = new URLSearchParams(
@@ -62,14 +66,13 @@ async function fetchAPI(endpoint, params = {}, retries = 3) {
   for (let attempt = 0; attempt < retries; attempt++) {
     const res = await fetch(url);
     if (res.status === 429) {
-      // Rate limited — wait with exponential backoff
       const delay = Math.min(2000 * Math.pow(2, attempt), 10000);
       await new Promise(r => setTimeout(r, delay));
       continue;
     }
     if (!res.ok) throw new Error(`OpenF1 ${res.status}: ${url}`);
     const data = await res.json();
-    setCache(key, data);
+    await setCache(key, data);
     return data;
   }
   throw new Error(`OpenF1 rate limited after ${retries} retries: ${url}`);
@@ -77,35 +80,31 @@ async function fetchAPI(endpoint, params = {}, retries = 3) {
 
 // ---- High-level helpers ----
 
-/**
- * Map our circuit IDs to OpenF1's circuit_short_name.
- * Returns null if the circuit isn't on the current calendar.
- */
 const CIRCUIT_MAP = {
-  'us-2012': 'Austin',        // Circuit of the Americas
-  'az-2016': 'Baku',          // Baku City Circuit
-  'es-1991': 'Catalunya',     // Circuit de Barcelona-Catalunya
-  'hu-1986': 'Hungaroring',   // Hungaroring
-  'it-1953': 'Imola',         // Autodromo Enzo e Dino Ferrari
-  'mc-1929': 'Monte Carlo',   // Circuit de Monaco
-  'ca-1978': 'Montreal',      // Circuit Gilles-Villeneuve
-  'at-1969': 'Spielberg',     // Red Bull Ring
-  'gb-1948': 'Silverstone',   // Silverstone Circuit
-  'be-1925': 'Spa-Francorchamps', // Circuit de Spa-Francorchamps
-  'nl-1948': 'Zandvoort',     // Circuit Zandvoort
-  'it-1922': 'Monza',         // Autodromo Nazionale Monza
-  'sg-2008': 'Singapore',     // Marina Bay Street Circuit
-  'jp-1962': 'Suzuka',        // Suzuka International Racing Course
-  'mx-1962': 'Mexico City',   // Autódromo Hermanos Rodríguez
-  'br-1940': 'Interlagos',    // Autódromo José Carlos Pace
-  'us-2023': 'Las Vegas',     // Las Vegas Street Circuit
-  'qa-2004': 'Lusail',        // Losail International Circuit
-  'ae-2009': 'Yas Marina Circuit', // Yas Marina Circuit
-  'sa-2021': 'Jeddah',        // Jeddah Corniche Circuit
-  'au-1953': 'Melbourne',     // Albert Park Circuit
-  'cn-2004': 'Shanghai',      // Shanghai International Circuit
-  'bh-2002': 'Sakhir',        // Bahrain International Circuit
-  'us-2022': 'Miami',         // Miami International Autodrome
+  'us-2012': 'Austin',
+  'az-2016': 'Baku',
+  'es-1991': 'Catalunya',
+  'hu-1986': 'Hungaroring',
+  'it-1953': 'Imola',
+  'mc-1929': 'Monte Carlo',
+  'ca-1978': 'Montreal',
+  'at-1969': 'Spielberg',
+  'gb-1948': 'Silverstone',
+  'be-1925': 'Spa-Francorchamps',
+  'nl-1948': 'Zandvoort',
+  'it-1922': 'Monza',
+  'sg-2008': 'Singapore',
+  'jp-1962': 'Suzuka',
+  'mx-1962': 'Mexico City',
+  'br-1940': 'Interlagos',
+  'us-2023': 'Las Vegas',
+  'qa-2004': 'Lusail',
+  'ae-2009': 'Yas Marina Circuit',
+  'sa-2021': 'Jeddah',
+  'au-1953': 'Melbourne',
+  'cn-2004': 'Shanghai',
+  'bh-2002': 'Sakhir',
+  'us-2022': 'Miami',
 };
 
 export function getOpenF1CircuitName(circuitId) {
@@ -116,20 +115,12 @@ export function isTelemetryAvailable(circuitId) {
   return circuitId in CIRCUIT_MAP;
 }
 
-/**
- * Get all sessions for a circuit in a given year.
- */
 export async function getSessions(circuitId, year = 2024) {
   const circuitName = getOpenF1CircuitName(circuitId);
   if (!circuitName) return [];
-  const data = await fetchAPI('sessions', { year, circuit_short_name: circuitName });
-  return data;
+  return fetchAPI('sessions', { year, circuit_short_name: circuitName });
 }
 
-/**
- * Get all laps for a session, sorted by duration.
- * Returns [{ driver_number, lap_number, lap_duration, date_start, ... }]
- */
 export async function getLaps(sessionKey) {
   const data = await fetchAPI('laps', { session_key: sessionKey });
   return data
@@ -137,26 +128,14 @@ export async function getLaps(sessionKey) {
     .sort((a, b) => a.lap_duration - b.lap_duration);
 }
 
-/**
- * Get location samples for a driver in a session.
- * Returns [{ date, x, y, z }]
- */
 export async function getLocation(sessionKey, driverNumber) {
   return fetchAPI('location', { session_key: sessionKey, driver_number: driverNumber });
 }
 
-/**
- * Get car telemetry for a driver in a session.
- * Returns [{ date, speed, throttle, brake, drs, n_gear, rpm }]
- */
 export async function getCarData(sessionKey, driverNumber) {
   return fetchAPI('car_data', { session_key: sessionKey, driver_number: driverNumber });
 }
 
-/**
- * Get driver info for a session.
- * Returns [{ driver_number, full_name, team_name, ... }]
- */
 export async function getDrivers(sessionKey) {
   return fetchAPI('drivers', { session_key: sessionKey });
 }
@@ -216,7 +195,7 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
   return {
     session: {
       key: sessionKey,
-      name: sessionKey, // will be overridden by caller
+      name: sessionKey,
       year,
       circuit: circuitName || circuitId,
     },
@@ -234,7 +213,6 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
 
 /**
  * Find the best qualifying session for a circuit+year, preferring main over sprint.
- * Returns { sessions, quali, laps, drivers } or null.
  */
 export async function getQualifyingData(circuitId, year = 2024) {
   const sessions = await getSessions(circuitId, year);
@@ -257,7 +235,6 @@ export async function getQualifyingData(circuitId, year = 2024) {
 
 /**
  * Full pipeline: get the fastest lap's telemetry for a circuit+year.
- * Returns null if no data available.
  */
 export async function getFastestLapTelemetry(circuitId, year = 2024) {
   const circuitName = getOpenF1CircuitName(circuitId);

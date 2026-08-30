@@ -16,7 +16,7 @@ function fmtAlt(m, unit) {
   return unit === 'imperial' ? `${(m * 3.28084).toFixed(0)} ft` : `${m} m`;
 }
 
-function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, sharedProgressRef }) {
+function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, loadStep, sharedProgressRef }) {
   return (
     <div className="track3d-card">
       <div className="track3d-canvas-wrap-outer" style={{ borderColor: color }}>
@@ -50,7 +50,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
       {telemetryLoading && (
         <div className="telemetry-badge loading">
           <span className="telemetry-badge-dot loading" />
-          Fetching telemetry…
+          {loadStep || 'Fetching telemetry…'}
         </div>
       )}
 
@@ -143,6 +143,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const [secondaryDrivers, setSecondaryDrivers] = useState([]);
   const [primaryDriver, setPrimaryDriver] = useState(null); // null = fastest
   const [secondaryDriver, setSecondaryDriver] = useState(null);
+  const [primaryLoadStep, setPrimaryLoadStep] = useState('');
+  const [secondaryLoadStep, setSecondaryLoadStep] = useState('');
   const primaryQualiData = useRef(null);
   const secondaryQualiData = useRef(null);
 
@@ -215,6 +217,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
       if (isTelemetryAvailable(primary.id)) {
         setPrimaryLoading(true);
         try {
+          setPrimaryLoadStep('Resolving session…');
           const qualiData = await getQualifyingData(primary.id, telemetryYear);
           if (cancelled || !qualiData) throw new Error('no qualifying data');
           primaryQualiData.current = qualiData;
@@ -228,25 +231,29 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           }).sort((a, b) => a.full_name.localeCompare(b.full_name));
           setPrimaryDrivers(uniqueDrivers);
 
-          // Default to fastest lap driver
           const fastestDriver = qualiData.laps[0]?.driver_number;
+          const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
+          const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
           if (fastestDriver != null) setPrimaryDriver(fastestDriver);
 
+          setPrimaryLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
           const data = await fetchDriverTelemetry(primary.id, telemetryYear, qualiData, fastestDriver);
           if (!cancelled && data) {
+            setPrimaryLoadStep('Projecting ribbon alignment…');
             const { projected, binned } = getCachedProjection(primary.id, telemetryYear, primary.coordinates, data.telemetry);
             setPrimaryTelemetry({ ...data, binned, projected });
           }
         } catch (e) {
           console.warn('Telemetry fetch failed for', primary.id, e);
         }
-        if (!cancelled) setPrimaryLoading(false);
+        if (!cancelled) { setPrimaryLoading(false); setPrimaryLoadStep(''); }
       }
 
       // Secondary
       if (isTelemetryAvailable(secondary.id)) {
         setSecondaryLoading(true);
         try {
+          setSecondaryLoadStep('Resolving session…');
           const qualiData = await getQualifyingData(secondary.id, telemetryYear);
           if (cancelled || !qualiData) throw new Error('no qualifying data');
           secondaryQualiData.current = qualiData;
@@ -260,17 +267,21 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           setSecondaryDrivers(uniqueDrivers);
 
           const fastestDriver = qualiData.laps[0]?.driver_number;
+          const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
+          const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
           if (fastestDriver != null) setSecondaryDriver(fastestDriver);
 
+          setSecondaryLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
           const data = await fetchDriverTelemetry(secondary.id, telemetryYear, qualiData, fastestDriver);
           if (!cancelled && data) {
+            setSecondaryLoadStep('Projecting ribbon alignment…');
             const { projected, binned } = getCachedProjection(secondary.id, telemetryYear, secondary.coordinates, data.telemetry);
             setSecondaryTelemetry({ ...data, binned, projected });
           }
         } catch (e) {
           console.warn('Telemetry fetch failed for', secondary.id, e);
         }
-        if (!cancelled) setSecondaryLoading(false);
+        if (!cancelled) { setSecondaryLoading(false); setSecondaryLoadStep(''); }
       }
     }
 
@@ -480,7 +491,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               sharedCameraRef={sharedCameraRef} instanceId="A"
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={primaryCanvasRef}
-              telemetry={primaryTelemetry} telemetryLoading={primaryLoading}
+              telemetry={primaryTelemetry} telemetryLoading={primaryLoading} loadStep={primaryLoadStep}
               sharedProgressRef={sharedProgressRef}
             />
             <StatCard
@@ -488,7 +499,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               sharedCameraRef={sharedCameraRef} instanceId="B"
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={secondaryCanvasRef}
-              telemetry={secondaryTelemetry} telemetryLoading={secondaryLoading}
+              telemetry={secondaryTelemetry} telemetryLoading={secondaryLoading} loadStep={secondaryLoadStep}
               sharedProgressRef={sharedProgressRef}
             />
           </div>
