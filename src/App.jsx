@@ -174,8 +174,8 @@ export default function App() {
   const selectCircuit = useStore(s => s.selectCircuit);
 
   // Derived state
-  const selected = useMemo(() => circuits.find(c => c.id === selectedId), [selectedId]);
-  const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId), [compareId]);
+  const selected = useMemo(() => circuits.find(c => c.id === selectedId) || circuits[0], [selectedId]);
+  const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId) || circuits[1], [compareId]);
   const positions = useMemo(() => (selected ? selected.coordinates.map(([lon, lat]) => [lat, lon]) : []), [selected]);
 
   const initialTelemetry = useMemo(() => {
