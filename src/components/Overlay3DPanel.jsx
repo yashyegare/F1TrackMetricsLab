@@ -389,12 +389,19 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary, cornerTimesA, cornerTimesB }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary, cornerTimesA, cornerTimesB, seaLevelMode, otherAltitude }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
     [detail.points, detail.corners, altitude, normalizedPoints]
   );
+
+  // Sea-level vertical offset: lift track above grid based on altitude
+  // Max altitude ~2232m (Mexico City) maps to ~0.10 units lift
+  const seaLevelOffset = useMemo(() => {
+    if (!seaLevelMode) return 0;
+    return Math.min(Math.abs(altitude || 0) / 2232, 1) * 0.10;
+  }, [seaLevelMode, altitude]);
 
   const xs = normalizedPoints.map((p) => p[0]);
   const zs = normalizedPoints.map((p) => p[1]);
@@ -468,7 +475,27 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
   const trailRef = isPrimary ? trailRefA : trailRefB;
 
   return (
-    <>
+    <group position={[0, seaLevelOffset, 0]}>
+      {seaLevelMode && altitude != null && (
+        <Html position={[0, 0.16, 0]} center style={{ pointerEvents: 'none' }}>
+          <div style={{
+            background: 'rgba(8,8,10,0.85)',
+            backdropFilter: 'blur(6px)',
+            border: '1px solid rgba(50,50,55,0.5)',
+            borderRadius: '5px',
+            padding: '3px 8px',
+            fontSize: '10px',
+            fontWeight: 700,
+            color: color,
+            whiteSpace: 'nowrap',
+            fontFamily: 'system-ui, sans-serif',
+            letterSpacing: '0.3px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+          }}>
+            {altitude >= 0 ? '+' : ''}{altitude}m ASL
+          </div>
+        </Html>
+      )}
       <OverlayRibbon points={normalizedPoints} color={color} opacity={opacity} elevation={elevation} circuitId={circuitId} />
       {normalizedCorners.map((corner) => (
         <OverlayCornerMarker
@@ -515,13 +542,13 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         isPrimary={isPrimary}
         trailRef={trailRef}
       />
-    </>
+    </group>
   );
 }
 
 // --- Main overlay scene ---
 
-function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
+function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, seaLevelMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
   const diag = 1.4;
 
   // Compute approximate corner times for hover deltas
@@ -585,6 +612,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           isPrimary={true}
           cornerTimesA={cornerTimesA}
           cornerTimesB={cornerTimesB}
+          seaLevelMode={seaLevelMode}
+          otherAltitude={secondaryAltitude}
         />
       )}
       {showTrackB && (
@@ -605,6 +634,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           isPrimary={false}
           cornerTimesA={cornerTimesA}
           cornerTimesB={cornerTimesB}
+          seaLevelMode={seaLevelMode}
+          otherAltitude={primaryAltitude}
         />
       )}
 
@@ -657,6 +688,7 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
   const [showTrackA, setShowTrackA] = useState(true);
   const [showTrackB, setShowTrackB] = useState(true);
   const [syncMode, setSyncMode] = useState(false);
+  const [seaLevelMode, setSeaLevelMode] = useState(false);
   const sharedProgressRef = useRef(Math.random());
   const gapRef = useRef({ primaryProgress: null, secondaryProgress: null, primaryTime: null, secondaryTime: null });
   const canvasWrapRef = useRef(null);
@@ -681,6 +713,9 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           </button>
           <button className={`overlay-ctrl-btn ${syncMode ? 'active' : ''}`} onClick={() => setSyncMode(s => !s)} title="Sync both car dots to the same lap progress">
             🔗 Sync Progress
+          </button>
+          <button className={`overlay-ctrl-btn ${seaLevelMode ? 'active' : ''}`} onClick={() => setSeaLevelMode(s => !s)} title="Show tracks at their sea-level altitude">
+            🏔 Sea Level
           </button>
           <div className="toolbar-separator" style={{ height: 16, alignSelf: 'center' }} />
           <button
@@ -724,6 +759,7 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             showTrackA={showTrackA}
             showTrackB={showTrackB}
             syncMode={syncMode}
+            seaLevelMode={seaLevelMode}
             sharedProgressRef={sharedProgressRef}
             primaryTelemetry={primaryTelemetry}
             secondaryTelemetry={secondaryTelemetry}
@@ -803,6 +839,7 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             Normalized to same bounding box · Corner markers stylized, not to scale
           </span>
           {syncMode && <span className="overlay-footer-sync">● Sync active</span>}
+          {seaLevelMode && <span className="overlay-footer-sync" style={{ color: '#c8a000' }}>● Sea level view</span>}
         </div>
         <div className="overlay-footer-legend">
           <span className="overlay-legend-item">
