@@ -1986,6 +1986,77 @@ body {
   font-weight: 500;
 }
 
+/* ---- Overlay stat comparison card ---- */
+
+.overlay-stat-card {
+  background: rgba(12, 12, 14, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(44, 44, 49, 0.5);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0;
+}
+
+.overlay-stat-diff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(44, 44, 49, 0.3);
+}
+
+.overlay-stat-diff:last-child {
+  border-bottom: none;
+}
+
+.overlay-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #5a5a5e;
+  width: 58px;
+  flex-shrink: 0;
+}
+
+.overlay-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay-stat-vs {
+  font-size: 8px;
+  color: #3a3a3e;
+  font-weight: 500;
+}
+
+.overlay-stat-badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.overlay-stat-badge.winner-a {
+  color: #e10600;
+  background: rgba(225, 6, 0, 0.08);
+}
+
+.overlay-stat-badge.winner-b {
+  color: #00a3ff;
+  background: rgba(0, 163, 255, 0.08);
+}
+
+.overlay-stat-badge.tie {
+  color: #5a5a5e;
+  background: rgba(100, 100, 104, 0.06);
+}
+
 /* ---- Unit toggle (sidebar) ---- */
 
 .unit-toggle-row {

@@ -493,7 +493,64 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           />
         </div>
 
-      </div>      <div className="overlay-footer">
+      </div>
+
+      {/* Stat comparison card */}
+      <div className="overlay-stat-card">
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">Length</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{(primary.length / 1000).toFixed(3)} km</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{(secondary.length / 1000).toFixed(3)} km</span>
+          <span className={`overlay-stat-badge ${primary.length > secondary.length ? 'winner-a' : 'winner-b'}`}>
+            {primary.length > secondary.length ? '▲' : '▼'} {Math.abs((primary.length - secondary.length) / 1000).toFixed(3)} km
+          </span>
+        </div>
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">Corners</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{primaryDetail.corners.length}</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondaryDetail.corners.length}</span>
+          <span className={`overlay-stat-badge ${primaryDetail.corners.length > secondaryDetail.corners.length ? 'winner-a' : primaryDetail.corners.length < secondaryDetail.corners.length ? 'winner-b' : 'tie'}`}>
+            {primaryDetail.corners.length > secondaryDetail.corners.length ? '▲' : primaryDetail.corners.length < secondaryDetail.corners.length ? '▼' : '—'} {Math.abs(primaryDetail.corners.length - secondaryDetail.corners.length)}
+          </span>
+        </div>
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">Altitude</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{primary.altitude} m</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondary.altitude} m</span>
+          <span className={`overlay-stat-badge ${primary.altitude > secondary.altitude ? 'winner-a' : 'winner-b'}`}>
+            {primary.altitude > secondary.altitude ? '▲' : '▼'} {Math.abs(primary.altitude - secondary.altitude)} m
+          </span>
+        </div>
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">DRS Zones</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{primary.drsZones || 0}</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondary.drsZones || 0}</span>
+          <span className="overlay-stat-badge tie">
+            — {Math.abs((primary.drsZones || 0) - (secondary.drsZones || 0))}
+          </span>
+        </div>
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">Opened</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{primary.opened}</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondary.opened}</span>
+          <span className={`overlay-stat-badge ${primary.opened < secondary.opened ? 'winner-a' : 'winner-b'}`}>
+            {primary.opened < secondary.opened ? '▲' : '▼'} {Math.abs(primary.opened - secondary.opened)}
+          </span>
+        </div>
+        <div className="overlay-stat-diff">
+          <span className="overlay-stat-label">Direction</span>
+          <span className="overlay-stat-val" style={{ color: '#e10600' }}>{primaryDetail.direction}</span>
+          <span className="overlay-stat-vs">vs</span>
+          <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondaryDetail.direction}</span>
+        </div>
+      </div>
+
+      <div className="overlay-footer">
         <div className="overlay-footer-info">
           <span className="overlay-footer-note">
             Normalized to same bounding box · Corner markers stylized, not to scale

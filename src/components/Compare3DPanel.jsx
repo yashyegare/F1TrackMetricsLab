@@ -607,62 +607,67 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </Suspense>
         )}
 
-        {/* Tire Strategy — one per driver */}
-        {telemetryMode && (
-          <div className="race-context-row">
-            {primaryTelemetry && (
-              <TireStrategy
-                stints={primaryStints}
-                pitStops={primaryPitStops}
-                totalLaps={primaryTotalLaps}
-                driverNumber={primaryTelemetry.lap.driver}
-                driverName={primaryTelemetry.lap.driverName}
+        {/* Telemetry panels — only in Side-by-Side mode */}
+        {viewMode === 'sidebyside' && (
+          <>
+            {/* Tire Strategy — one per driver */}
+            {telemetryMode && (
+              <div className="race-context-row">
+                {primaryTelemetry && (
+                  <TireStrategy
+                    stints={primaryStints}
+                    pitStops={primaryPitStops}
+                    totalLaps={primaryTotalLaps}
+                    driverNumber={primaryTelemetry.lap.driver}
+                    driverName={primaryTelemetry.lap.driverName}
+                  />
+                )}
+                {secondaryTelemetry && (
+                  <TireStrategy
+                    stints={secondaryStints}
+                    pitStops={secondaryPitStops}
+                    totalLaps={secondaryTotalLaps}
+                    driverNumber={secondaryTelemetry.lap.driver}
+                    driverName={secondaryTelemetry.lap.driverName}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Race Control Flags */}
+            {telemetryMode && (primaryRaceControl || secondaryRaceControl) && (
+              <div className="race-context-row">
+                {primaryRaceControl && (
+                  <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
+                )}
+                {secondaryRaceControl && !primaryRaceControl && (
+                  <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
+                )}
+              </div>
+            )}
+
+            {/* Sector Comparison */}
+            {telemetryMode && (
+              <div className="race-context-row">
+                <SectorComparison
+                  primaryLap={primaryTelemetry?.lap}
+                  secondaryLap={secondaryTelemetry?.lap}
+                  primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                  secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                />
+              </div>
+            )}
+
+            {telemetryMode && (
+              <TelemetryScrubber
+                primaryProjected={primaryTelemetry?.projected}
+                secondaryProjected={secondaryTelemetry?.projected}
+                sharedProgressRef={sharedProgressRef}
+                primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
               />
             )}
-            {secondaryTelemetry && (
-              <TireStrategy
-                stints={secondaryStints}
-                pitStops={secondaryPitStops}
-                totalLaps={secondaryTotalLaps}
-                driverNumber={secondaryTelemetry.lap.driver}
-                driverName={secondaryTelemetry.lap.driverName}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Race Control Flags */}
-        {telemetryMode && (primaryRaceControl || secondaryRaceControl) && (
-          <div className="race-context-row">
-            {primaryRaceControl && (
-              <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
-            )}
-            {secondaryRaceControl && !primaryRaceControl && (
-              <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
-            )}
-          </div>
-        )}
-
-        {/* Sector Comparison */}
-        {telemetryMode && (
-          <div className="race-context-row">
-            <SectorComparison
-              primaryLap={primaryTelemetry?.lap}
-              secondaryLap={secondaryTelemetry?.lap}
-              primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
-              secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
-            />
-          </div>
-        )}
-
-        {telemetryMode && (
-          <TelemetryScrubber
-            primaryProjected={primaryTelemetry?.projected}
-            secondaryProjected={secondaryTelemetry?.projected}
-            sharedProgressRef={sharedProgressRef}
-            primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
-            secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
-          />
+          </>
         )}
 
         {telemetryMode && (
