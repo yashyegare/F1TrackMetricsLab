@@ -12,12 +12,31 @@ const FLAG_STYLES = {
   'Chequered': { bg: '#333', text: '#fff', icon: '🏁', label: 'END' },
 };
 
-function getFlagStyle(flag) {
-  if (!flag) return null;
-  const key = Object.keys(FIELD_STYLES).find(k =>
-    flag.toLowerCase().includes(k.toLowerCase())
-  );
-  return key ? FLAG_STYLES[key] : null;
+function getFlagStyle(flag, category, message) {
+  // Try flag field first
+  if (flag) {
+    const key = Object.keys(FLAG_STYLES).find(k =>
+      flag.toLowerCase().includes(k.toLowerCase())
+    );
+    if (key) return FLAG_STYLES[key];
+  }
+  // Fallback to category field (SC/VSC may live here instead of flag)
+  if (category) {
+    const cat = category.toLowerCase();
+    if (cat.includes('virtual')) return FLAG_STYLES['VSC'];
+    if (cat.includes('safety') || cat === 'sc') return FLAG_STYLES['SC'];
+    if (cat.includes('yellow')) return FLAG_STYLES['Yellow'];
+    if (cat.includes('red')) return FLAG_STYLES['Red'];
+  }
+  // Fallback to message text
+  if (message) {
+    const msg = message.toLowerCase();
+    if (msg.includes('safety car')) return FLAG_STYLES['SC'];
+    if (msg.includes('virtual safety car')) return FLAG_STYLES['VSC'];
+    if (msg.includes('red flag')) return FLAG_STYLES['Red'];
+    if (msg.includes('yellow')) return FLAG_STYLES['Yellow'];
+  }
+  return null;
 }
 
 const FIELD_STYLES = FLAG_STYLES;
@@ -31,7 +50,10 @@ export default function RaceControlOverlay({ flags, totalLaps, sessionDateStart 
   if (!flags || flags.length === 0) return null;
 
   // Filter to interesting flags (skip non-flag messages)
-  const flagEvents = flags.filter(f => f.flag && f.flag !== '');
+  const flagEvents = flags.filter(f =>
+    (f.flag && f.flag !== '') ||
+    (f.category && (f.category.toLowerCase().includes('safety') || f.category.toLowerCase().includes('virtual') || f.category.toLowerCase().includes('yellow') || f.category.toLowerCase().includes('red')))
+  );
 
   if (flagEvents.length === 0) return null;
 
@@ -43,7 +65,7 @@ export default function RaceControlOverlay({ flags, totalLaps, sessionDateStart 
       </div>
       <div className="race-control-events">
         {flagEvents.map((event, i) => {
-          const style = getFlagStyle(event.flag) || { bg: '#444', text: '#fff', icon: '🚩', label: event.flag };
+          const style = getFlagStyle(event.flag, event.category, event.message) || { bg: '#444', text: '#fff', icon: '🚩', label: event.flag || event.category || 'FLAG' };
           const lapPct = totalLaps ? ((event.lap_number || 0) / totalLaps) * 100 : 0;
           return (
             <div

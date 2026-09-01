@@ -91,13 +91,26 @@ describe('calculateGForces', () => {
 });
 
 describe('prepareTraceStack', () => {
-  it('returns speedTrace, throttleBrakeTrace, gearTrace', () => {
+  it('returns speedTrace, throttleBrakeTrace, gearTrace, rpmTrace', () => {
     const primary = makeProjected(50);
     const secondary = makeProjected(50, 1000, 88);
-    const { speedTrace, throttleBrakeTrace, gearTrace } = prepareTraceStack(primary, secondary, 20);
+    const { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace } = prepareTraceStack(primary, secondary, 20);
     expect(Array.isArray(speedTrace)).toBe(true);
     expect(Array.isArray(throttleBrakeTrace)).toBe(true);
     expect(Array.isArray(gearTrace)).toBe(true);
+    expect(Array.isArray(rpmTrace)).toBe(true);
+  });
+
+  it('rpmTrace has rpmA and rpmB fields', () => {
+    const primary = makeProjected(50);
+    const secondary = makeProjected(50);
+    const { rpmTrace } = prepareTraceStack(primary, secondary, 10);
+    for (const r of rpmTrace) {
+      expect(r).toHaveProperty('rpmA');
+      expect(r).toHaveProperty('rpmB');
+      expect(typeof r.rpmA).toBe('number');
+      expect(typeof r.rpmB).toBe('number');
+    }
   });
 
   it('speedTrace has carA and carB fields', () => {
@@ -137,11 +150,12 @@ describe('prepareTraceStack', () => {
   });
 
   it('handles null/empty inputs gracefully', () => {
-    const { speedTrace, throttleBrakeTrace, gearTrace } = prepareTraceStack(null, null, 10);
+    const { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace } = prepareTraceStack(null, null, 10);
     // Returns zero-filled traces (not empty) — carA/carB both 0
     expect(speedTrace.length).toBe(11);
     expect(speedTrace.every(s => s.carA === 0 && s.carB === 0)).toBe(true);
     expect(throttleBrakeTrace.every(t => t.throttleA === 0 && t.brakeA === 0)).toBe(true);
     expect(gearTrace.every(g => g.gearA === 1 && g.gearB === 1)).toBe(true);
+    expect(rpmTrace.every(r => r.rpmA === 0 && r.rpmB === 0)).toBe(true);
   });
 });

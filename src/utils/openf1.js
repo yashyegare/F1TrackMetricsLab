@@ -174,6 +174,14 @@ export async function getIntervals(sessionKey) {
   return fetchAPI('intervals', { session_key: sessionKey });
 }
 
+/**
+ * Fetch stint data for a session (tire compound per stint).
+ * Returns array of { driver_number, stint_number, compound, lap_start, lap_end, ... }
+ */
+export async function getStints(sessionKey) {
+  return fetchAPI('stints', { session_key: sessionKey });
+}
+
 // ---- Tire compound mapping ----
 
 const COMPOUND_COLORS = {
@@ -272,6 +280,9 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
       number: lapInfo.lap_number,
       duration: lapInfo.lap_duration,
       dateStart: lapInfo.date_start,
+      sector1: lapInfo.duration_sector_1 ?? null,
+      sector2: lapInfo.duration_sector_2 ?? null,
+      sector3: lapInfo.duration_sector_3 ?? null,
     },
     telemetry,
   };

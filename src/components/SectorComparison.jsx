@@ -19,21 +19,23 @@ function fmtDelta(delta) {
 
 /**
  * Extracts sector times from a lap object.
- * OpenF1 lap objects have: sector_1_time, sector_2_time, sector_3_time (in seconds).
+ * OpenF1 lap objects have: duration_sector_1, duration_sector_2, duration_sector_3 (in seconds).
+ * getLapTelemetry maps these to sector1, sector2, sector3 on the returned lap object.
  */
 export default function SectorComparison({ primaryLap, secondaryLap, primaryName, secondaryName }) {
   if (!primaryLap && !secondaryLap) return null;
 
-  // Extract sector times from raw OpenF1 lap data
+  // Extract sector times from the lap object mapped in getLapTelemetry
+  // (duration_sector_1/2/3 from OpenF1 are mapped to sector1/2/3)
   const primarySectors = [
-    primaryLap?.sector_1_time,
-    primaryLap?.sector_2_time,
-    primaryLap?.sector_3_time,
+    primaryLap?.sector1 ?? primaryLap?.duration_sector_1,
+    primaryLap?.sector2 ?? primaryLap?.duration_sector_2,
+    primaryLap?.sector3 ?? primaryLap?.duration_sector_3,
   ];
   const secondarySectors = [
-    secondaryLap?.sector_1_time,
-    secondaryLap?.sector_2_time,
-    secondaryLap?.sector_3_time,
+    secondaryLap?.sector1 ?? secondaryLap?.duration_sector_1,
+    secondaryLap?.sector2 ?? secondaryLap?.duration_sector_2,
+    secondaryLap?.sector3 ?? secondaryLap?.duration_sector_3,
   ];
 
   const hasSectors = primarySectors.some(s => s != null) || secondarySectors.some(s => s != null);

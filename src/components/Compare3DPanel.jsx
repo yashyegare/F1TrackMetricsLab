@@ -1,7 +1,7 @@
 import React, { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
-import { isTelemetryAvailable, getQualifyingData, getLapTelemetry, getPitStops, getRaceControl, getWeather } from '../utils/openf1';
+import { isTelemetryAvailable, getQualifyingData, getLapTelemetry, getPitStops, getStints, getRaceControl, getWeather } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
 import TelemetryScrubber from './TelemetryScrubber';
 import TireStrategy from './TireStrategy';
@@ -154,6 +154,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const secondaryQualiData = useRef(null);
 
   // Race context data
+  const [primaryStints, setPrimaryStints] = useState(null);
+  const [secondaryStints, setSecondaryStints] = useState(null);
   const [primaryPitStops, setPrimaryPitStops] = useState(null);
   const [secondaryPitStops, setSecondaryPitStops] = useState(null);
   const [primaryRaceControl, setPrimaryRaceControl] = useState(null);
@@ -222,6 +224,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
       setSecondaryDriver(null);
       primaryQualiData.current = null;
       secondaryQualiData.current = null;
+      setPrimaryStints(null);
+      setSecondaryStints(null);
       setPrimaryPitStops(null);
       setSecondaryPitStops(null);
       setPrimaryRaceControl(null);
@@ -277,18 +281,21 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           const raceSession = qualiData.sessions.find(s => s.session_type === 'Race');
           if (raceSession) {
             const raceKey = raceSession.session_key;
-            const [pitData, rcData, wxData] = await Promise.allSettled([
+            const [stintsData, pitData, rcData, wxData] = await Promise.allSettled([
+              getStints(raceKey),
               getPitStops(raceKey),
               getRaceControl(raceKey),
               getWeather(raceKey),
             ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
 
             if (isPrimary) {
+              setPrimaryStints(stintsData);
               setPrimaryPitStops(pitData);
               setPrimaryRaceControl(rcData);
               setPrimaryWeather(wxData);
               setPrimaryTotalLaps(qualiData.laps.length || raceSession.total_laps || 57);
             } else {
+              setSecondaryStints(stintsData);
               setSecondaryPitStops(pitData);
               setSecondaryRaceControl(rcData);
               setSecondaryWeather(wxData);
@@ -600,6 +607,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           <div className="race-context-row">
             {primaryTelemetry && (
               <TireStrategy
+                stints={primaryStints}
                 pitStops={primaryPitStops}
                 totalLaps={primaryTotalLaps}
                 driverNumber={primaryTelemetry.lap.driver}
@@ -608,6 +616,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
             )}
             {secondaryTelemetry && (
               <TireStrategy
+                stints={secondaryStints}
                 pitStops={secondaryPitStops}
                 totalLaps={secondaryTotalLaps}
                 driverNumber={secondaryTelemetry.lap.driver}
