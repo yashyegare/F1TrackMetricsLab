@@ -107,6 +107,7 @@ export function prepareTraceStack(primaryProjected, secondaryProjected, resoluti
   const speedTrace = [];
   const throttleBrakeTrace = [];
   const gearTrace = [];
+  const rpmTrace = [];
 
   for (let i = 0; i <= resolution; i++) {
     const progress = i / resolution;
@@ -137,7 +138,14 @@ export function prepareTraceStack(primaryProjected, secondaryProjected, resoluti
       drsA: p ? (p.drs > 0 ? 1 : 0) : 0,
       drsB: s ? (s.drs > 0 ? 1 : 0) : 0,
     });
+
+    rpmTrace.push({
+      progress,
+      distance: Math.round(progress * 100) + '%',
+      rpmA: p ? Math.round(p.rpm || 0) : 0,
+      rpmB: s ? Math.round(s.rpm || 0) : 0,
+    });
   }
 
-  return { speedTrace, throttleBrakeTrace, gearTrace };
+  return { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace };
 }

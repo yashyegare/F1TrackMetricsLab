@@ -565,6 +565,299 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* ---- Weather Chips ---- */
+.weather-chips-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
+  margin: 8px auto 0;
+}
+
+.weather-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #141416;
+  border: 1px solid #2c2c31;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 11px;
+}
+
+.weather-icon {
+  font-size: 20px;
+}
+
+.weather-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.weather-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.weather-label {
+  font-size: 9px;
+  color: #6a6a70;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.weather-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f2f2f2;
+}
+
+.weather-rain {
+  font-size: 11px;
+  font-weight: 600;
+  color: #d8d8db;
+  padding-top: 2px;
+}
+
+/* ---- Race Context Row ---- */
+.race-context-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 900px;
+  margin: 8px auto 0;
+}
+
+.race-context-row > * {
+  flex: 1;
+}
+
+/* ---- Tire Strategy ---- */
+.tire-strategy {
+  background: #141416;
+  border: 1px solid #2c2c31;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.tire-strategy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.tire-strategy-title {
+  font-size: 10px;
+  color: #8a8a90;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tire-strategy-driver {
+  font-size: 10px;
+  color: #6a6a70;
+}
+
+.tire-strategy-strip {
+  display: flex;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.tire-stint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 20px;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.tire-stint-label {
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tire-stint-laps {
+  font-size: 8px;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.tire-strategy-pits {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tire-pit-marker {
+  font-size: 9px;
+  color: #8a8a90;
+}
+
+/* ---- Race Control Overlay ---- */
+.race-control-strip {
+  background: #141416;
+  border: 1px solid #2c2c31;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.race-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.race-control-title {
+  font-size: 10px;
+  color: #8a8a90;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.race-control-count {
+  font-size: 9px;
+  color: #6a6a70;
+}
+
+.race-control-events {
+  position: relative;
+  height: 30px;
+  background: #1e1e22;
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.race-control-event {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  cursor: default;
+}
+
+.race-control-marker {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  margin-top: 3px;
+  position: relative;
+  z-index: 2;
+}
+
+.race-control-tooltip {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1e;
+  border: 1px solid #2c2c31;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 10px;
+  color: #d8d8db;
+  white-space: nowrap;
+  z-index: 10;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.race-control-event:hover .race-control-tooltip {
+  display: block;
+}
+
+.race-control-msg {
+  color: #8a8a90;
+  font-size: 9px;
+  margin-top: 2px;
+  max-width: 200px;
+  white-space: normal;
+}
+
+/* ---- Sector Comparison ---- */
+.sector-comparison {
+  background: #141416;
+  border: 1px solid #2c2c31;
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.sector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.sector-title {
+  font-size: 10px;
+  color: #8a8a90;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sector-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sector-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sector-row-header {
+  border-bottom: 1px solid #2c2c31;
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.sector-row-total {
+  border-top: 1px solid #2c2c31;
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.sector-cell {
+  flex: 1;
+  font-size: 11px;
+  color: #d8d8db;
+  text-align: right;
+}
+
+.sector-cell.sector-label {
+  flex: 0.5;
+  font-weight: 600;
+  color: #8a8a90;
+  text-align: left;
+}
+
+.sector-faster {
+  color: #00cc44 !important;
+  font-weight: 600;
+}
+
 .compare-note {
   max-width: 500px;
   text-align: center;

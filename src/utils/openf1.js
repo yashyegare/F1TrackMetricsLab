@@ -140,6 +140,70 @@ export async function getDrivers(sessionKey) {
   return fetchAPI('drivers', { session_key: sessionKey });
 }
 
+// ---- New endpoints (Fastlytics-inspired) ----
+
+/**
+ * Fetch pit stops for a session.
+ * Returns array of { driver_number, lap_number, pit_duration, date, ... }
+ */
+export async function getPitStops(sessionKey) {
+  return fetchAPI('pit', { session_key: sessionKey });
+}
+
+/**
+ * Fetch race control messages (flags, SC, VSC, etc.)
+ * Returns array of { category, message, flag, lap_number, date, ... }
+ */
+export async function getRaceControl(sessionKey) {
+  return fetchAPI('race_control', { session_key: sessionKey });
+}
+
+/**
+ * Fetch weather data for a session.
+ * Returns array of { air_temperature, track_temperature, humidity, rainfall, wind_speed, wind_direction, date }
+ */
+export async function getWeather(sessionKey) {
+  return fetchAPI('weather', { session_key: sessionKey });
+}
+
+/**
+ * Fetch interval/gap data for a session.
+ * Returns array of { driver_number, gap_to_leader, interval, date, ... }
+ */
+export async function getIntervals(sessionKey) {
+  return fetchAPI('intervals', { session_key: sessionKey });
+}
+
+// ---- Tire compound mapping ----
+
+const COMPOUND_COLORS = {
+  SOFT: '#e10600',
+  MEDIUM: '#ffd700',
+  HARD: '#e8e8e8',
+  INTERMEDIATE: '#00cc44',
+  WET: '#0099ff',
+  UNKNOWN: '#666',
+};
+
+const COMPOUND_SHORT = {
+  SOFT: 'S',
+  MEDIUM: 'M',
+  HARD: 'H',
+  INTERMEDIATE: 'I',
+  WET: 'W',
+  UNKNOWN: '?',
+};
+
+export function getCompoundColor(compound) {
+  return COMPOUND_COLORS[compound?.toUpperCase()] || COMPOUND_COLORS.UNKNOWN;
+}
+
+export function getCompoundShort(compound) {
+  return COMPOUND_SHORT[compound?.toUpperCase()] || '?';
+}
+
+// ---- Core telemetry fetch ----
+
 /**
  * Core telemetry fetch: given a session + driver + lap, fetch and join location+car_data.
  * Returns { session, lap, telemetry } or null.
@@ -188,6 +252,7 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
       brake: closest?.brake ?? 0,
       drs: closest?.drs ?? 0,
       gear: closest?.n_gear ?? 0,
+      rpm: closest?.rpm ?? 0,
     };
   });
 
@@ -212,9 +277,8 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
   };
 }
 
-/**
- * Find the best qualifying session for a circuit+year, preferring main over sprint.
- */
+// ---- Qualifying data ----
+
 const qualiCache = new Map();
 const QUALI_CACHE_MAX = 20;
 

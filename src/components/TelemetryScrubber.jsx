@@ -24,11 +24,12 @@ function CustomTooltip({ active, payload, label }) {
 /**
  * TelemetryScrubber — synchronized trace stack for head-to-head telemetry comparison.
  *
- * 4 lanes sharing a common distance axis (0→100%):
+ * Lanes sharing a common distance axis (0→100%):
  * 1. Speed trace (Car A vs Car B)
  * 2. Time delta (who's ahead where)
  * 3. Throttle & brake overlay (both cars)
  * 4. Gear & DRS states (both cars)
+ * 5. RPM (both cars)
  *
  * Collapsible: hidden by default, shown when expanded.
  * Bidirectional: hovering the chart snaps the 3D CarDot to that position.
@@ -41,12 +42,12 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
   const nameA = primaryName || 'Car A';
   const nameB = secondaryName || 'Car B';
 
-  const { speedTrace, throttleBrakeTrace, gearTrace, deltaTrace } = useMemo(() => {
-    const { speedTrace, throttleBrakeTrace, gearTrace } = prepareTraceStack(
+  const { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace, deltaTrace } = useMemo(() => {
+    const { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace } = prepareTraceStack(
       primaryProjected, secondaryProjected, resolution
     );
     const deltaTrace = calculateTimeDelta(primaryProjected, secondaryProjected, resolution);
-    return { speedTrace, throttleBrakeTrace, gearTrace, deltaTrace };
+    return { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace, deltaTrace };
   }, [primaryProjected, secondaryProjected]);
 
   // Bidirectional scrub: chart hover → 3D CarDot
@@ -71,7 +72,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
         onClick={() => setExpanded(e => !e)}
       >
         {expanded ? '▾ Hide Telemetry Traces' : '▸ Show Telemetry Traces'}
-        <span className="scrubber-toggle-hint">speed · delta · throttle · gears</span>
+        <span className="scrubber-toggle-hint">speed · delta · throttle · gears · RPM</span>
       </button>
 
       {expanded && (
@@ -147,10 +148,8 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 100]} />
                 <Tooltip content={<CustomTooltip />} />
-                {/* Car A — throttle as dashed outline, brake as dashed outline */}
                 <Area type="stepAfter" dataKey="throttleA" stroke={CAR_A_COLOR} fill={CAR_A_COLOR} fillOpacity={0.1} dot={false} strokeWidth={1} name={`Throttle ${nameA}`} />
                 <Area type="stepAfter" dataKey="brakeA" stroke={CAR_A_COLOR} fill={CAR_A_COLOR} fillOpacity={0.25} dot={false} strokeWidth={1} strokeDasharray="4 2" name={`Brake ${nameA}`} />
-                {/* Car B */}
                 <Area type="stepAfter" dataKey="throttleB" stroke={CAR_B_COLOR} fill={CAR_B_COLOR} fillOpacity={0.1} dot={false} strokeWidth={1} name={`Throttle ${nameB}`} />
                 <Area type="stepAfter" dataKey="brakeB" stroke={CAR_B_COLOR} fill={CAR_B_COLOR} fillOpacity={0.25} dot={false} strokeWidth={1} strokeDasharray="4 2" name={`Brake ${nameB}`} />
               </AreaChart>
@@ -177,6 +176,27 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 <Line type="stepAfter" dataKey="drsA" stroke="#00ff88" dot={false} strokeWidth={2} name={`DRS ${nameA}`} strokeDasharray="4 2" />
                 <Line type="stepAfter" dataKey="gearB" stroke={CAR_B_COLOR} dot={false} strokeWidth={1.5} name={`Gear ${nameB}`} />
                 <Line type="stepAfter" dataKey="drsB" stroke="#00ff88" dot={false} strokeWidth={2} name={`DRS ${nameB}`} strokeDasharray="8 4" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Lane 5: RPM — both drivers */}
+          <div className="scrubber-lane">
+            <div className="scrubber-lane-header">
+              <span className="scrubber-lane-title">RPM</span>
+              <span className="scrubber-legend">
+                <span style={{ color: CAR_A_COLOR }}>● {nameA}</span>
+                <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={80}>
+              <LineChart data={rpmTrace} onMouseMove={handleScrub} syncId="telemetrySync">
+                <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
+                <XAxis dataKey="distance" tick={tickStyle} interval={99} />
+                <YAxis tick={tickStyle} width={40} domain={[0, 15000]} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="rpmA" stroke={CAR_A_COLOR} dot={false} strokeWidth={1.5} name={`RPM ${nameA}`} />
+                <Line type="monotone" dataKey="rpmB" stroke={CAR_B_COLOR} dot={false} strokeWidth={1.5} name={`RPM ${nameB}`} />
               </LineChart>
             </ResponsiveContainer>
           </div>

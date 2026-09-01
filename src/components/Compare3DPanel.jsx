@@ -1,9 +1,13 @@
 import React, { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
-import { isTelemetryAvailable, getQualifyingData, getLapTelemetry } from '../utils/openf1';
+import { isTelemetryAvailable, getQualifyingData, getLapTelemetry, getPitStops, getRaceControl, getWeather } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
 import TelemetryScrubber from './TelemetryScrubber';
+import TireStrategy from './TireStrategy';
+import RaceControlOverlay from './RaceControlOverlay';
+import SectorComparison from './SectorComparison';
+import WeatherChip from './WeatherChip';
 
 const Overlay3DPanel = React.lazy(() => import('./Overlay3DPanel.jsx'));
 
@@ -149,6 +153,16 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const primaryQualiData = useRef(null);
   const secondaryQualiData = useRef(null);
 
+  // Race context data
+  const [primaryPitStops, setPrimaryPitStops] = useState(null);
+  const [secondaryPitStops, setSecondaryPitStops] = useState(null);
+  const [primaryRaceControl, setPrimaryRaceControl] = useState(null);
+  const [secondaryRaceControl, setSecondaryRaceControl] = useState(null);
+  const [primaryWeather, setPrimaryWeather] = useState(null);
+  const [secondaryWeather, setSecondaryWeather] = useState(null);
+  const [primaryTotalLaps, setPrimaryTotalLaps] = useState(0);
+  const [secondaryTotalLaps, setSecondaryTotalLaps] = useState(0);
+
   // Sync telemetry state to URL for deep linking
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -208,6 +222,12 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
       setSecondaryDriver(null);
       primaryQualiData.current = null;
       secondaryQualiData.current = null;
+      setPrimaryPitStops(null);
+      setSecondaryPitStops(null);
+      setPrimaryRaceControl(null);
+      setSecondaryRaceControl(null);
+      setPrimaryWeather(null);
+      setSecondaryWeather(null);
       return;
     }
 
@@ -250,6 +270,31 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           setLoadStep('Projecting ribbon alignment…');
           const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, circuit.coordinates, data.telemetry);
           setData({ ...data, binned, projected });
+        }
+
+        // Fetch race context data (pit stops, race control, weather) in parallel
+        if (!cancelled) {
+          const raceSession = qualiData.sessions.find(s => s.session_type === 'Race');
+          if (raceSession) {
+            const raceKey = raceSession.session_key;
+            const [pitData, rcData, wxData] = await Promise.allSettled([
+              getPitStops(raceKey),
+              getRaceControl(raceKey),
+              getWeather(raceKey),
+            ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
+
+            if (isPrimary) {
+              setPrimaryPitStops(pitData);
+              setPrimaryRaceControl(rcData);
+              setPrimaryWeather(wxData);
+              setPrimaryTotalLaps(qualiData.laps.length || raceSession.total_laps || 57);
+            } else {
+              setSecondaryPitStops(pitData);
+              setSecondaryRaceControl(rcData);
+              setSecondaryWeather(wxData);
+              setSecondaryTotalLaps(qualiData.laps.length || raceSession.total_laps || 57);
+            }
+          }
         }
       } catch (e) {
         console.warn('Telemetry fetch failed for', circuit.id, e);
@@ -510,6 +555,14 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </div>
         )}
 
+        {/* Weather chips */}
+        {telemetryMode && (primaryWeather || secondaryWeather) && (
+          <div className="weather-chips-row">
+            {primaryWeather && <WeatherChip weather={primaryWeather} />}
+            {secondaryWeather && <WeatherChip weather={secondaryWeather} />}
+          </div>
+        )}
+
         {viewMode === 'sidebyside' ? (
           <div className="compare3d-panel">
             <StatCard
@@ -542,7 +595,51 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </Suspense>
         )}
 
+        {/* Tire Strategy — one per driver */}
+        {telemetryMode && (
+          <div className="race-context-row">
+            {primaryTelemetry && (
+              <TireStrategy
+                pitStops={primaryPitStops}
+                totalLaps={primaryTotalLaps}
+                driverNumber={primaryTelemetry.lap.driver}
+                driverName={primaryTelemetry.lap.driverName}
+              />
+            )}
+            {secondaryTelemetry && (
+              <TireStrategy
+                pitStops={secondaryPitStops}
+                totalLaps={secondaryTotalLaps}
+                driverNumber={secondaryTelemetry.lap.driver}
+                driverName={secondaryTelemetry.lap.driverName}
+              />
+            )}
+          </div>
+        )}
 
+        {/* Race Control Flags */}
+        {telemetryMode && (primaryRaceControl || secondaryRaceControl) && (
+          <div className="race-context-row">
+            {primaryRaceControl && (
+              <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
+            )}
+            {secondaryRaceControl && !primaryRaceControl && (
+              <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
+            )}
+          </div>
+        )}
+
+        {/* Sector Comparison */}
+        {telemetryMode && (
+          <div className="race-context-row">
+            <SectorComparison
+              primaryLap={primaryTelemetry?.lap}
+              secondaryLap={secondaryTelemetry?.lap}
+              primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
+              secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
+            />
+          </div>
+        )}
 
         {telemetryMode && (
           <TelemetryScrubber
