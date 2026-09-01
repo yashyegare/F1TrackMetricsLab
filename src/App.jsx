@@ -90,13 +90,15 @@ function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
   return (
     <div className={`info-panel${expanded ? ' expanded' : ''}`}>
       <button className="info-toggle" onClick={() => setExpanded(e => !e)}>
-        <span className="info-toggle-name">{circuit.name}</span>
-        <span className="info-toggle-chevron">{expanded ? '▾' : '▸'}</span>
+        <div className="info-toggle-left">
+          <span className="info-toggle-name">{circuit.name}</span>
+          <span className="info-toggle-location">{circuit.location}</span>
+        </div>
+        <span className="info-toggle-chevron">▾</span>
       </button>
       {expanded && (
         <div className="info-body">
           <div className="info-grid">
-            <div><span className="label">Location</span><span className="value">{circuit.location}</span></div>
             <div><span className="label">Length</span><span className="value">{formatLength(circuit.length, unit)}</span></div>
             <div><span className="label">Opened</span><span className="value">{circuit.opened ?? '—'}</span></div>
             <div><span className="label">First GP</span><span className="value">{circuit.firstgp ?? '—'}</span></div>
@@ -109,7 +111,9 @@ function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
               </div>
             )}
           </div>
+
           <TrackHistory history={circuit.trackHistory} />
+
           {similar.length > 0 && (
             <div className="similar-tracks">
               <span className="similar-label">Similar tracks</span>
