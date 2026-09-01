@@ -471,6 +471,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
             )}
           </div>
 
+          <div className="toolbar-separator" />
+
           <div className="anim-controls telemetry-controls">
             <button
               className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
@@ -497,6 +499,9 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               </select>
             )}
           </div>
+
+          <div className="toolbar-separator" />
+
           <div className="screenshot-controls">
             <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
             <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
