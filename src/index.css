@@ -1933,9 +1933,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: rgba(12, 12, 14, 0.95);
-  border-top: 1px solid rgba(44, 44, 49, 0.5);
+  padding: 8px 14px;
+  background: rgba(10, 10, 12, 0.98);
+  border-top: 1px solid rgba(44, 44, 49, 0.3);
 }
 
 .overlay-footer-info {
@@ -1946,7 +1946,7 @@ body {
 
 .overlay-footer-note {
   font-size: 9px;
-  color: #4a4a4e;
+  color: #3a3a3e;
   font-weight: 500;
   letter-spacing: 0.3px;
 }
@@ -1967,45 +1967,42 @@ body {
 .overlay-legend-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 5px;
+  font-size: 10px;
   font-weight: 600;
-  color: #9a9aa0;
+  color: #7a7a80;
 }
 
 .overlay-legend-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .overlay-legend-sep {
   font-size: 9px;
-  color: #3a3a3e;
+  color: #2a2a2e;
   font-weight: 500;
 }
 
 /* ---- Overlay stat comparison card ---- */
 
 .overlay-stat-card {
-  background: rgba(12, 12, 14, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(44, 44, 49, 0.5);
-  border-radius: 8px;
-  padding: 8px 12px;
+  background: rgba(14, 14, 16, 0.95);
+  border-top: 1px solid rgba(44, 44, 49, 0.4);
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 0;
 }
 
 .overlay-stat-diff {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(44, 44, 49, 0.3);
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(44, 44, 49, 0.25);
 }
 
 .overlay-stat-diff:last-child {
@@ -2016,30 +2013,32 @@ body {
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   color: #5a5a5e;
-  width: 58px;
+  width: 62px;
   flex-shrink: 0;
 }
 
 .overlay-stat-val {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .overlay-stat-vs {
-  font-size: 8px;
-  color: #3a3a3e;
+  font-size: 9px;
+  color: #333;
   font-weight: 500;
+  margin: 0 2px;
 }
 
 .overlay-stat-badge {
   margin-left: auto;
   font-size: 9px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
 }
 
 .overlay-stat-badge.winner-a {
@@ -2053,7 +2052,7 @@ body {
 }
 
 .overlay-stat-badge.tie {
-  color: #5a5a5e;
+  color: #4a4a4e;
   background: rgba(100, 100, 104, 0.06);
 }
 

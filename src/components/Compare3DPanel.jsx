@@ -509,70 +509,70 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </div>
         </div>
 
-        {/* Driver pickers — shown above the canvases when Race Pace is active */}
-        {telemetryMode && (
-          <div className="driver-picker-row">
-            {primaryHasTelemetry && primaryDrivers.length > 0 ? (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
-                <select
-                  className="driver-picker-select"
-                  value={primaryDriver ?? ''}
-                  onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
-                >
-                  {primaryDrivers.map(d => (
-                    <option key={d.driver_number} value={d.driver_number}>
-                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : primaryHasTelemetry ? (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
-                <span className="driver-picker-unavailable">Loading drivers…</span>
-              </div>
-            ) : (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#666' }}>Track A</label>
-                <span className="driver-picker-unavailable">Telemetry not available</span>
+        {/* Driver pickers + Weather — only in Side-by-Side mode */}
+        {viewMode === 'sidebyside' && telemetryMode && (
+          <>
+            <div className="driver-picker-row">
+              {primaryHasTelemetry && primaryDrivers.length > 0 ? (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
+                  <select
+                    className="driver-picker-select"
+                    value={primaryDriver ?? ''}
+                    onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
+                  >
+                    {primaryDrivers.map(d => (
+                      <option key={d.driver_number} value={d.driver_number}>
+                        {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : primaryHasTelemetry ? (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
+                  <span className="driver-picker-unavailable">Loading drivers…</span>
+                </div>
+              ) : (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#666' }}>Track A</label>
+                  <span className="driver-picker-unavailable">Telemetry not available</span>
+                </div>
+              )}
+              {secondaryHasTelemetry && secondaryDrivers.length > 0 ? (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
+                  <select
+                    className="driver-picker-select"
+                    value={secondaryDriver ?? ''}
+                    onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
+                  >
+                    {secondaryDrivers.map(d => (
+                      <option key={d.driver_number} value={d.driver_number}>
+                        {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : secondaryHasTelemetry ? (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
+                  <span className="driver-picker-unavailable">Loading drivers…</span>
+                </div>
+              ) : (
+                <div className="driver-picker-group">
+                  <label className="driver-picker-label" style={{ color: '#666' }}>Track B</label>
+                  <span className="driver-picker-unavailable">Telemetry not available</span>
+                </div>
+              )}
+            </div>
+            {(primaryWeather || secondaryWeather) && (
+              <div className="weather-chips-row">
+                {primaryWeather && <WeatherChip weather={primaryWeather} />}
+                {secondaryWeather && <WeatherChip weather={secondaryWeather} />}
               </div>
             )}
-            {secondaryHasTelemetry && secondaryDrivers.length > 0 ? (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
-                <select
-                  className="driver-picker-select"
-                  value={secondaryDriver ?? ''}
-                  onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
-                >
-                  {secondaryDrivers.map(d => (
-                    <option key={d.driver_number} value={d.driver_number}>
-                      {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : secondaryHasTelemetry ? (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
-                <span className="driver-picker-unavailable">Loading drivers…</span>
-              </div>
-            ) : (
-              <div className="driver-picker-group">
-                <label className="driver-picker-label" style={{ color: '#666' }}>Track B</label>
-                <span className="driver-picker-unavailable">Telemetry not available</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Weather chips */}
-        {telemetryMode && (primaryWeather || secondaryWeather) && (
-          <div className="weather-chips-row">
-            {primaryWeather && <WeatherChip weather={primaryWeather} />}
-            {secondaryWeather && <WeatherChip weather={secondaryWeather} />}
-          </div>
+          </>
         )}
 
         {viewMode === 'sidebyside' ? (
@@ -670,7 +670,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </>
         )}
 
-        {telemetryMode && (
+        {viewMode === 'sidebyside' && telemetryMode && (
           <div className="speed-legend">
             <span className="speed-legend-label">Speed</span>
             <div className="speed-legend-bar" />
@@ -683,13 +683,15 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </div>
         )}
 
-        <p className="compare-note">
-          {telemetryMode ? (
-            <>Speed-colored ribbon uses real telemetry from OpenF1 ({primaryTelemetry?.lap?.driverName || ('Driver #' + (primaryTelemetry?.lap?.driver ?? '?'))}/{secondaryTelemetry?.lap?.driverName || ('Driver #' + (secondaryTelemetry?.lap?.driver ?? '?'))} qualifying laps). Pick any driver from the dropdown to compare head-to-head.</>
-          ) : (
-            <>Track shape comes from the same outline data as the map view. Corner count, spin direction and longest straight are computed from that outline (not official telemetry), and the road width / marker heights are stylized for visibility, not to scale.</>
-          )}
-        </p>
+        {viewMode === 'sidebyside' && (
+          <p className="compare-note">
+            {telemetryMode ? (
+              <>Speed-colored ribbon uses real telemetry from OpenF1 ({primaryTelemetry?.lap?.driverName || ('Driver #' + (primaryTelemetry?.lap?.driver ?? '?'))}/{secondaryTelemetry?.lap?.driverName || ('Driver #' + (secondaryTelemetry?.lap?.driver ?? '?'))} qualifying laps). Pick any driver from the dropdown to compare head-to-head.</>
+            ) : (
+              <>Track shape comes from the same outline data as the map view. Corner count, spin direction and longest straight are computed from that outline (not official telemetry), and the road width / marker heights are stylized for visibility, not to scale.</>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );
