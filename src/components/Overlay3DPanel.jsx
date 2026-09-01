@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Line, Grid, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
@@ -222,8 +222,10 @@ function CornerDelta({ position, corner, timeA, timeB, elevation, color }) {
       <mesh
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
-        visible={false}
-      />
+      >
+        <sphereGeometry args={[0.018, 8, 8]} />
+        <meshStandardMaterial color="white" transparent opacity={0.0} depthWrite={false} />
+      </mesh>
       <Html center style={{ pointerEvents: 'none', display: hovered ? 'block' : 'none' }}>
         <div style={{
           background: 'rgba(8,8,10,0.92)',
@@ -244,39 +246,6 @@ function CornerDelta({ position, corner, timeA, timeB, elevation, color }) {
       </Html>
     </group>
   );
-}
-
-// --- Camera auto-follow ---
-
-function CameraFollow({ gapRef, animSpeed, animPaused, cameraDistance }) {
-  const { camera } = useThree();
-  const targetRef = useRef(new THREE.Vector3(0, 0, 0));
-  const angleRef = useRef(0);
-
-  useFrame((_, delta) => {
-    if (animSpeed <= 0 || animPaused) return;
-
-    // Slowly rotate angle based on which car is ahead
-    const { primaryProgress, secondaryProgress } = gapRef.current;
-    if (primaryProgress != null && secondaryProgress != null) {
-      const diff = primaryProgress - secondaryProgress;
-      // Bias camera toward the leading car
-      angleRef.current += delta * 0.3 * (1 + diff * 2);
-    } else {
-      angleRef.current += delta * 0.3;
-    }
-
-    const radius = cameraDistance * 0.8;
-    const height = cameraDistance * 0.5;
-    const targetX = Math.cos(angleRef.current) * radius;
-    const targetZ = Math.sin(angleRef.current) * radius;
-
-    // Smooth lerp toward target
-    camera.position.lerp(new THREE.Vector3(targetX, height, targetZ), delta * 1.5);
-    camera.lookAt(0, 0, 0);
-  });
-
-  return null;
 }
 
 // --- Single track ribbon (semi-transparent) ---
@@ -658,12 +627,10 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
       <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
 
-      <CameraFollow gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} cameraDistance={camera.distance} />
-
       <OrbitControls
         enablePan={false}
-        autoRotate={animSpeed <= 0 || animPaused}
-        autoRotateSpeed={0.4}
+        autoRotate
+        autoRotateSpeed={0.5}
         minDistance={camera.distance * 0.35}
         maxDistance={camera.distance * 2.4}
         target={[0, 0, 0]}
