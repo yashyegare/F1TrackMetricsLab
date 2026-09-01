@@ -604,6 +604,12 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               animPaused={animPaused}
               primaryTelemetry={primaryTelemetry?.projected}
               secondaryTelemetry={secondaryTelemetry?.projected}
+              primaryWeather={primaryWeather}
+              secondaryWeather={secondaryWeather}
+              primaryLap={primaryTelemetry?.lap}
+              secondaryLap={secondaryTelemetry?.lap}
+              primaryAllLaps={primaryQualiData.current?.laps}
+              secondaryAllLaps={secondaryQualiData.current?.laps}
             />
           </Suspense>
         )}
@@ -655,6 +661,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
                   secondaryLap={secondaryTelemetry?.lap}
                   primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
                   secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                  primaryAllLaps={primaryQualiData.current?.laps}
+                  secondaryAllLaps={secondaryQualiData.current?.laps}
                 />
               </div>
             )}

@@ -546,6 +546,67 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
   );
 }
 
+// --- Sector delta shading: colored lines on ribbon showing which driver is faster ---
+
+function SectorDeltaShading({ normalizedPoints, elevation, primaryProjected, secondaryProjected }) {
+  const lines = useMemo(() => {
+    if (!primaryProjected?.length || !secondaryProjected?.length || normalizedPoints.length === 0) return [];
+    const n = normalizedPoints.length;
+    const sectorSize = Math.floor(n / 3);
+    const result = [];
+
+    for (let s = 0; s < 3; s++) {
+      const start = s * sectorSize;
+      const end = s === 2 ? n : (s + 1) * sectorSize;
+
+      // Average speed of each driver in this sector
+      const avgSpeed = (proj) => {
+        const speeds = [];
+        for (let i = start; i < end; i++) {
+          const progress = i / n;
+          // Find nearest projected point
+          let best = null, bestDist = Infinity;
+          for (const p of proj) {
+            const d = Math.abs(p.progress - progress);
+            if (d < bestDist) { bestDist = d; best = p; }
+          }
+          if (best && best.speed) speeds.push(best.speed);
+        }
+        return speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
+      };
+
+      const speedA = avgSpeed(primaryProjected);
+      const speedB = avgSpeed(secondaryProjected);
+      const diff = speedA - speedB;
+
+      // Only show if meaningful difference (> 2 km/h)
+      if (Math.abs(diff) < 2) continue;
+
+      const color = diff > 0 ? '#00cc44' : '#e10600'; // green = A faster, red = B faster
+      const pts = [];
+      for (let i = start; i <= Math.min(end, n - 1); i++) {
+        pts.push([normalizedPoints[i][0], (elevation[i] ?? 0) + 0.005, normalizedPoints[i][1]]);
+      }
+      // Close the loop for the last sector
+      if (s === 2 && pts.length > 0) {
+        pts.push([normalizedPoints[0][0], (elevation[0] ?? 0) + 0.005, normalizedPoints[0][1]]);
+      }
+      result.push({ pts, color, speedA, speedB, sector: s + 1 });
+    }
+    return result;
+  }, [normalizedPoints, elevation, primaryProjected, secondaryProjected]);
+
+  if (lines.length === 0) return null;
+
+  return (
+    <group>
+      {lines.map((l, i) => (
+        <Line key={`sector-delta-${i}`} points={l.pts} color={l.color} lineWidth={4} transparent opacity={0.7} />
+      ))}
+    </group>
+  );
+}
+
 // --- Main overlay scene ---
 
 function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, seaLevelMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
@@ -593,6 +654,24 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       <ambientLight intensity={0.55} />
       <directionalLight position={[diag * 0.6, diag * 0.9, diag * 0.35]} intensity={1.15} />
       <directionalLight position={[-diag * 0.5, diag * 0.4, -diag * 0.4]} intensity={0.35} />
+
+      {/* Sector delta shading on both tracks */}
+      {(() => {
+        const normA = normalizePoints(primaryDetail.points);
+        const normB = normalizePoints(secondaryDetail.points);
+        const elevA = computeOverlayElevation(primaryDetail.points, primaryDetail.corners, primaryAltitude, normA);
+        const elevB = computeOverlayElevation(secondaryDetail.points, secondaryDetail.corners, secondaryAltitude, normB);
+        return (
+          <>
+            {showTrackA && primaryTelemetry && secondaryTelemetry && (
+              <SectorDeltaShading normalizedPoints={normA} elevation={elevA} primaryProjected={primaryTelemetry} secondaryProjected={secondaryTelemetry} />
+            )}
+            {showTrackB && primaryTelemetry && secondaryTelemetry && (
+              <SectorDeltaShading normalizedPoints={normB} elevation={elevB} primaryProjected={primaryTelemetry} secondaryProjected={secondaryTelemetry} />
+            )}
+          </>
+        );
+      })()}
 
       {showTrackA && (
         <OverlayTrack
@@ -683,7 +762,7 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
 
 // --- Main export ---
 
-export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false, primaryTelemetry, secondaryTelemetry }) {
+export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false, primaryTelemetry, secondaryTelemetry, primaryWeather, secondaryWeather, primaryLap, secondaryLap, primaryAllLaps, secondaryAllLaps }) {
   const [showLabels, setShowLabels] = useState(true);
   const [showTrackA, setShowTrackA] = useState(true);
   const [showTrackB, setShowTrackB] = useState(true);
@@ -702,6 +781,46 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
     link.href = canvas.toDataURL('image/png');
     link.click();
   }, [primary.id, secondary.id]);
+
+  // Best theoretical lap from qualifying sector times
+  const bestTheoretical = useMemo(() => {
+    const compute = (laps) => {
+      if (!laps || laps.length === 0) return null;
+      const s1s = laps.map(l => l.duration_sector_1).filter(v => v != null);
+      const s2s = laps.map(l => l.duration_sector_2).filter(v => v != null);
+      const s3s = laps.map(l => l.duration_sector_3).filter(v => v != null);
+      if (s1s.length === 0 || s2s.length === 0 || s3s.length === 0) return null;
+      const best = Math.min(...s1s) + Math.min(...s2s) + Math.min(...s3s);
+      return best;
+    };
+    return {
+      primary: compute(primaryAllLaps),
+      secondary: compute(secondaryAllLaps),
+    };
+  }, [primaryAllLaps, secondaryAllLaps]);
+
+  // Weather info for overlay HUD
+  const wx = useMemo(() => {
+    const get = (w) => {
+      if (!w) return null;
+      const data = Array.isArray(w) ? w[w.length - 1] : w;
+      return data ? {
+        trackTemp: data.track_temperature,
+        airTemp: data.air_temperature,
+        rainfall: data.rainfall,
+        humidity: data.humidity,
+        windSpeed: data.wind_speed,
+      } : null;
+    };
+    return { primary: get(primaryWeather), secondary: get(secondaryWeather) };
+  }, [primaryWeather, secondaryWeather]);
+
+  const fmtTime = (s) => {
+    if (s == null) return '—';
+    const mins = Math.floor(s / 60);
+    const secs = (s % 60).toFixed(3);
+    return mins > 0 ? `${mins}:${secs.padStart(6, '0')}` : secs;
+  };
 
   return (
     <div className="compare3d-wrapper">
@@ -742,6 +861,30 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
         <button className="overlay-screenshot-btn" onClick={handleScreenshot} title="Download overlay as PNG">
           📷
         </button>
+
+        {/* Weather + Best Theoretical Lap bar */}
+        {(wx.primary || wx.secondary || bestTheoretical.primary != null) && (
+          <div className="overlay-info-bar">
+            {wx.primary && (
+              <span className="overlay-wx-chip" style={{ borderColor: '#e10600' }}>
+                {wx.primary.rainfall ? '🌧' : '☀️'} {wx.primary.airTemp != null ? `${wx.primary.airTemp}°C air` : ''}
+                {wx.primary.trackTemp != null ? ` · ${wx.primary.trackTemp}°C track` : ''}
+              </span>
+            )}
+            {wx.secondary && (
+              <span className="overlay-wx-chip" style={{ borderColor: '#00a3ff' }}>
+                {wx.secondary.rainfall ? '🌧' : '☀️'} {wx.secondary.airTemp != null ? `${wx.secondary.airTemp}°C air` : ''}
+                {wx.secondary.trackTemp != null ? ` · ${wx.secondary.trackTemp}°C track` : ''}
+              </span>
+            )}
+            {bestTheoretical.primary != null && (
+              <span className="overlay-theoretical">
+                Best theoretical: {fmtTime(bestTheoretical.primary)}
+                {bestTheoretical.secondary != null && ` vs ${fmtTime(bestTheoretical.secondary)}`}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="overlay-3d-canvas-wrap" ref={canvasWrapRef}>
           <OverlayScene
@@ -832,6 +975,23 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondaryDetail.direction}</span>
         </div>
       </div>
+
+      {/* Layout history badges */}
+      {((primary.trackHistory?.layoutChanges && primary.trackHistory.layoutChanges !== 'Original layout unchanged since opening') ||
+        (secondary.trackHistory?.layoutChanges && secondary.trackHistory.layoutChanges !== 'Original layout unchanged since opening')) && (
+        <div className="overlay-layout-history">
+          {primary.trackHistory?.layoutChanges && (
+            <span className="overlay-layout-badge" style={{ borderColor: '#e10600' }}>
+              <span style={{ color: '#e10600', fontWeight: 700 }}>{primary.name.split(' ')[0]}</span> {primary.trackHistory.layoutChanges}
+            </span>
+          )}
+          {secondary.trackHistory?.layoutChanges && (
+            <span className="overlay-layout-badge" style={{ borderColor: '#00a3ff' }}>
+              <span style={{ color: '#00a3ff', fontWeight: 700 }}>{secondary.name.split(' ')[0]}</span> {secondary.trackHistory.layoutChanges}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="overlay-footer">
         <div className="overlay-footer-info">
