@@ -1853,86 +1853,71 @@ body {
   width: 100%;
   max-width: 900px;
   position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #2c2c31;
+  background: #0a0a0c;
 }
 
 .overlay-3d-canvas-wrap {
   width: 100%;
-  height: 520px;
-  background: radial-gradient(circle at 50% 30%, #16161a 0%, #08080a 75%);
-  border-radius: 12px;
-  border: 1px solid #2c2c31;
+  height: 540px;
+  background: radial-gradient(ellipse at 50% 40%, #141418 0%, #0a0a0c 60%, #060608 100%);
+  border: none;
+  border-radius: 0;
   overflow: hidden;
 }
 
-.overlay-3d-legend {
-  display: flex;
-  gap: 24px;
-  justify-content: center;
-  margin-top: 14px;
-}
-
-.overlay-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #d8d8db;
-}
-
-.overlay-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* ---- Overlay controls ---- */
+/* ---- Overlay controls (floating HUD) ---- */
 
 .overlay-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
-  background: rgba(14, 14, 16, 0.92);
-  backdrop-filter: blur(10px);
-  border: 1px solid #222226;
+  gap: 3px;
+  padding: 4px 6px;
+  background: rgba(10, 10, 12, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(44, 44, 49, 0.7);
   border-radius: 8px;
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 10px;
   z-index: 5;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .overlay-ctrl-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: #1a1a1e;
-  border: 1px solid #2a2a2e;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 5px;
-  color: #8a8a90;
+  color: #6a6a70;
   font-size: 10px;
   font-weight: 600;
-  padding: 3px 7px;
+  padding: 4px 8px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.15s ease;
   white-space: nowrap;
+  letter-spacing: 0.3px;
 }
 
 .overlay-ctrl-btn:hover {
-  background: #222226;
-  color: #d8d8db;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b0b0b4;
 }
 
 .overlay-ctrl-btn.active {
-  background: #282830;
+  background: rgba(255, 255, 255, 0.06);
   color: #e8e8ea;
-  border-color: #3a3a42;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .overlay-ctrl-btn.track-toggle {
-  border-left-width: 2px;
+  border-left: 2px solid;
+  padding-left: 10px;
+  margin-left: 2px;
 }
 
 .track-toggle-dot {
@@ -1942,77 +1927,63 @@ body {
   flex-shrink: 0;
 }
 
-/* ---- Overlay stat comparison card ---- */
+/* ---- Overlay footer ---- */
 
-.overlay-stat-card {
-  background: rgba(14, 14, 16, 0.92);
-  backdrop-filter: blur(10px);
-  border: 1px solid #222226;
-  border-radius: 8px;
-  padding: 10px 12px;
+.overlay-footer {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 10px;
-  width: 100%;
-  max-width: 900px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(12, 12, 14, 0.95);
+  border-top: 1px solid rgba(44, 44, 49, 0.5);
 }
 
-.overlay-stat-diff {
+.overlay-footer-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.overlay-footer-note {
+  font-size: 9px;
+  color: #4a4a4e;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.overlay-footer-sync {
+  font-size: 9px;
+  color: #22c55e;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.overlay-footer-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.overlay-legend-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(40, 40, 44, 0.6);
-}
-
-.overlay-stat-diff:last-child {
-  border-bottom: none;
-}
-
-.overlay-stat-label {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #6a6a70;
-  width: 60px;
+  color: #9a9aa0;
+}
+
+.overlay-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.overlay-stat-val {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.overlay-stat-vs {
-  font-size: 8px;
-  color: #444;
-  font-weight: 500;
-}
-
-.overlay-stat-badge {
-  margin-left: auto;
+.overlay-legend-sep {
   font-size: 9px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-.overlay-stat-badge.winner-a {
-  color: #e10600;
-  background: rgba(225, 6, 0, 0.1);
-}
-
-.overlay-stat-badge.winner-b {
-  color: #00a3ff;
-  background: rgba(0, 163, 255, 0.1);
-}
-
-.overlay-stat-badge.tie {
-  color: #6a6a70;
-  background: rgba(100, 100, 104, 0.1);
+  color: #3a3a3e;
+  font-weight: 500;
 }
 
 /* ---- Unit toggle (sidebar) ---- */

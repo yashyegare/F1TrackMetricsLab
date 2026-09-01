@@ -418,32 +418,6 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
   );
 }
 
-// --- Stat diff card ---
-
-function StatDiff({ label, valA, valB, colorA = '#e10600', colorB = '#00a3ff', format, diffFormat }) {
-  const fmt = format || ((v) => v);
-  // Only compute numeric diff if both values are numbers
-  const numA = typeof valA === 'number' ? valA : null;
-  const numB = typeof valB === 'number' ? valB : null;
-  const diff = numA != null && numB != null ? numA - numB : null;
-  const absDiff = diff != null ? Math.abs(diff) : null;
-  const winner = diff != null ? (diff > 0 ? 'A' : diff < 0 ? 'B' : null) : null;
-  const displayDiff = diffFormat ? diffFormat(absDiff, valA, valB) : (absDiff != null ? absDiff : null);
-  return (
-    <div className="overlay-stat-diff">
-      <span className="overlay-stat-label">{label}</span>
-      <span className="overlay-stat-val" style={{ color: colorA }}>{fmt(valA)}</span>
-      <span className="overlay-stat-vs">vs</span>
-      <span className="overlay-stat-val" style={{ color: colorB }}>{fmt(valB)}</span>
-      {displayDiff != null && (
-        <span className={`overlay-stat-badge ${winner === 'A' ? 'winner-a' : winner === 'B' ? 'winner-b' : 'tie'}`}>
-          {winner === 'A' ? '▲' : winner === 'B' ? '▼' : '—'} {displayDiff}
-        </span>
-      )}
-    </div>
-  );
-}
-
 // --- Main export ---
 
 // Sync progress driver (inside Canvas)
@@ -519,33 +493,25 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           />
         </div>
 
-        <div className="overlay-3d-legend">
+      </div>      <div className="overlay-footer">
+        <div className="overlay-footer-info">
+          <span className="overlay-footer-note">
+            Normalized to same bounding box · Corner markers stylized, not to scale
+          </span>
+          {syncMode && <span className="overlay-footer-sync">● Synced playback</span>}
+        </div>
+        <div className="overlay-footer-legend">
           <span className="overlay-legend-item">
             <span className="overlay-legend-dot" style={{ background: '#e10600' }} />
-            {primary.name} ({primary.location})
+            {primary.name}
           </span>
+          <span className="overlay-legend-sep">vs</span>
           <span className="overlay-legend-item">
             <span className="overlay-legend-dot" style={{ background: '#00a3ff' }} />
-            {secondary.name} ({secondary.location})
+            {secondary.name}
           </span>
         </div>
-
       </div>
-
-      {/* Stat comparison card — below the canvas */}
-      <div className="overlay-stat-card">
-        <StatDiff label="Length" valA={primary.length / 1000} valB={secondary.length / 1000} format={(v) => v != null ? `${v.toFixed(3)} km` : '—'} diffFormat={(d) => d != null ? `${d.toFixed(3)} km` : null} />
-        <StatDiff label="Corners" valA={primaryDetail.corners.length} valB={secondaryDetail.corners.length} />
-        <StatDiff label="Altitude" valA={primary.altitude} valB={secondary.altitude} format={(v) => v != null ? `${v} m` : '—'} diffFormat={(d) => d != null ? `${d} m` : null} />
-        <StatDiff label="DRS Zones" valA={primary.drsZones || 0} valB={secondary.drsZones || 0} />
-        <StatDiff label="Opened" valA={primary.opened} valB={secondary.opened} />
-        <StatDiff label="Direction" valA={primaryDetail.direction} valB={secondaryDetail.direction} format={(v) => v || '—'} />
-      </div>
-      <p className="compare-note">
-        Both tracks are normalized to the same bounding box so their shapes are directly comparable.
-        Semi-transparency shows overlap. Corner markers and track width are stylized, not to scale.
-        {syncMode && ' Sync mode: both car dots advance at the same progress for direct speed comparison.'}
-      </p>
     </div>
   );
 }
