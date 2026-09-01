@@ -218,24 +218,7 @@ function OverlayCornerMarker({ position, poleHeight, accentColor, y = 0 }) {
 
 // --- Floating circuit label in 3D ---
 
-function CircuitLabel({ text, position, color, fontSize = 0.05 }) {
-  return (
-    <Billboard position={position} follow lockX={false} lockY={false} lockZ={false}>
-      <Text
-        fontSize={fontSize}
-        color={color}
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={fontSize * 0.08}
-        outlineColor="#000000"
-        fontWeight="bold"
-        maxWidth={2}
-      >
-        {text}
-      </Text>
-    </Billboard>
-  );
-}
+// Circuit labels are rendered as DOM overlays, not inside Canvas
 
 // --- Live gap readout ---
 
@@ -392,12 +375,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
     }));
   }, [detail.corners, detail.points, showCorners]);
 
-  // Label position (center of track, elevated)
-  const labelPos = useMemo(() => {
-    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
-    return [cx, poleHeight * 6, cz];
-  }, [xs, zs, poleHeight]);
+
 
   return (
     <>
@@ -415,9 +393,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         <Line key={`ov-drs-${i}`} points={pts} color="#00ff88" lineWidth={3} transparent opacity={0.5} />
       ))}
 
-      {showLabel && (
-        <CircuitLabel text={detail.name || ''} position={labelPos} color={color} fontSize={0.06} />
-      )}
+
 
       <OverlayCarDot
         points={normalizedPoints}
@@ -601,6 +577,15 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
         <button className="overlay-screenshot-btn" onClick={handleScreenshot} title="Download overlay as PNG">
           📷
         </button>
+
+        {/* Circuit name labels — DOM overlay */}
+        {showLabels && (
+          <div className="overlay-labels">
+            <span className="overlay-label" style={{ color: '#e10600' }}>{primary.name}</span>
+            <span className="overlay-label-sep">vs</span>
+            <span className="overlay-label" style={{ color: '#00a3ff' }}>{secondary.name}</span>
+          </div>
+        )}
 
         <div className="overlay-3d-canvas-wrap" ref={canvasWrapRef}>
           <OverlayScene

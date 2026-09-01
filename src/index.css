@@ -1957,6 +1957,32 @@ body {
   transform: scale(1.05);
 }
 
+/* ---- Overlay circuit name labels ---- */
+
+.overlay-labels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(8, 8, 10, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(44, 44, 49, 0.4);
+}
+
+.overlay-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-label-sep {
+  font-size: 10px;
+  color: #3a3a3e;
+  font-weight: 500;
+}
+
 /* ---- Overlay stat comparison card ---- */
 
 .overlay-stat-card {
