@@ -3,7 +3,6 @@ import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
 import { isTelemetryAvailable, getQualifyingData, getLapTelemetry, getPitStops, getStints, getRaceControl, getWeather } from '../utils/openf1';
 import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
-import TelemetryScrubber from './TelemetryScrubber';
 import TireStrategy from './TireStrategy';
 import RaceControlOverlay from './RaceControlOverlay';
 import SectorComparison from './SectorComparison';
@@ -660,15 +659,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               </div>
             )}
 
-            {telemetryMode && (
-              <TelemetryScrubber
-                primaryProjected={primaryTelemetry?.projected}
-                secondaryProjected={secondaryTelemetry?.projected}
-                sharedProgressRef={sharedProgressRef}
-                primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
-                secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
-              />
-            )}
+
           </>
         )}
 
