@@ -1660,6 +1660,11 @@ body {
   gap: 6px;
   width: 100%;
   flex-wrap: wrap;
+  padding: 8px 10px;
+  background: rgba(12, 12, 14, 0.8);
+  border: 1px solid #1a1a1e;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 .anim-controls, .screenshot-controls {
@@ -1670,63 +1675,69 @@ body {
 
 .screenshot-controls {
   margin-left: auto;
+  gap: 3px;
 }
 
 .toolbar-label {
-  font-size: 10px;
-  color: #555558;
-  margin-right: 2px;
-  font-weight: 600;
+  font-size: 8px;
+  color: #3a3a3f;
+  margin-right: 4px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
 .toolbar-separator {
   width: 1px;
   height: 20px;
-  background: #26262a;
-  margin: 0 4px;
+  background: #1e1e22;
+  margin: 0 8px;
 }
 
 .anim-btn {
-  background: #131316;
-  border: 1px solid #222226;
-  color: #6a6a70;
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 8px;
+  background: #111114;
+  border: 1px solid #1e1e22;
+  color: #4a4a50;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  font-family: inherit;
 }
 
 .anim-btn:hover {
-  background: #1e1e22;
-  color: #d8d8db;
-  border-color: #3a3a42;
+  background: #1a1a1e;
+  color: #9a9aa0;
+  border-color: #2a2a2e;
+  transform: translateY(-1px);
 }
 
 .anim-btn.active {
-  background: linear-gradient(135deg, #e10600 0%, #c40500 100%);
+  background: #e10600;
   border-color: #e10600;
   color: white;
-  box-shadow: 0 1px 8px rgba(225, 6, 0, 0.25);
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.35), 0 2px 4px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
 }
 
 .anim-btn.telemetry-active {
   background: linear-gradient(135deg, #e10600 0%, #c40500 100%);
   border-color: #e10600;
   color: white;
-  box-shadow: 0 1px 8px rgba(225, 6, 0, 0.25);
+  box-shadow: 0 0 14px rgba(225, 6, 0, 0.4), 0 2px 6px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
 }
 
 .telemetry-controls {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-left: 10px;
-  border-left: 1px solid #222226;
+  padding-left: 12px;
+  border-left: 1px solid #1a1a1e;
 }
 
 .telemetry-year-select {

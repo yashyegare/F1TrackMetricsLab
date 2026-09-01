@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Line, Grid, ContactShadows, Billboard, Text, Html } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Line, Grid, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
@@ -75,13 +75,17 @@ function interpolateTelemetrySpeed(telemetry, progress) {
   return prev.speed + (curr.speed - prev.speed) * t;
 }
 
-// --- Animated car dot for overlay ---
+// --- Ghost trail positions store ---
+const TRAIL_LENGTH = 12;
 
-function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary }) {
+// --- Animated car dot for overlay with ghost trail ---
+
+function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary, trailRef }) {
   const groupRef = useRef();
   const localProgress = useRef(Math.random());
   const progressRef = useRef(Math.random());
   const lastTime = useRef(null);
+  const trailPositions = useRef([]);
 
   const sphereR = size;
 
@@ -97,27 +101,20 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
     if (sharedProgressRef) {
       progressRef.current = sharedProgressRef.current;
     } else if (telemetry && telemetry.length > 0) {
-      // Telemetry-paced: variable speed based on real data
       const now = performance.now();
       if (lastTime.current === null) lastTime.current = now;
-      const elapsed = (now - lastTime.current) / 1000; // seconds
+      const elapsed = (now - lastTime.current) / 1000;
       lastTime.current = now;
 
-      // Find current speed from telemetry
       const currentSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
       if (currentSpeed != null && currentSpeed > 0) {
-        // Convert km/h to progress/second: speed (km/h) / track_length_km / 3600
-        // Normalize: at 300 km/h on a 5km track, one lap takes ~60s
-        // We want the dot to complete in roughly real lap time
-        const trackLengthKm = total * 0.001; // approximate from cumulative
+        const trackLengthKm = total * 0.001;
         const progressPerSecond = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         progressRef.current = (progressRef.current + elapsed * progressPerSecond * speed) % 1;
       } else {
-        // Fallback to constant speed
         progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
       }
 
-      // Update gap reference
       if (gapRef && isPrimary) {
         gapRef.current.primaryProgress = progressRef.current;
         gapRef.current.primaryTime = performance.now();
@@ -140,6 +137,13 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
 
     const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
     groupRef.current.position.set(pos[0], pos[1], pos[2]);
+
+    // Ghost trail: store recent positions
+    trailPositions.current.push([...pos]);
+    if (trailPositions.current.length > TRAIL_LENGTH) {
+      trailPositions.current.shift();
+    }
+    if (trailRef) trailRef.current = [...trailPositions.current];
   });
 
   const initPos = useMemo(() =>
@@ -160,6 +164,119 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
       </mesh>
     </group>
   );
+}
+
+// --- Ghost trail renderer ---
+
+function GhostTrail({ trailRef, color, size }) {
+  const meshRefs = useRef([]);
+
+  useFrame(() => {
+    const positions = trailRef.current || [];
+    for (let i = 0; i < TRAIL_LENGTH; i++) {
+      const mesh = meshRefs.current[i];
+      if (!mesh) continue;
+      if (i < positions.length) {
+        mesh.visible = true;
+        mesh.position.set(positions[i][0], positions[i][1], positions[i][2]);
+        const t = i / TRAIL_LENGTH;
+        mesh.scale.setScalar(t * 0.7);
+        mesh.material.opacity = t * 0.35;
+      } else {
+        mesh.visible = false;
+      }
+    }
+  });
+
+  return (
+    <group>
+      {Array.from({ length: TRAIL_LENGTH }, (_, i) => (
+        <mesh
+          key={i}
+          ref={el => { meshRefs.current[i] = el; }}
+          visible={false}
+        >
+          <sphereGeometry args={[size, 8, 8]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={0.5}
+            transparent
+            opacity={0}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// --- Corner delta tooltip (hover-only) ---
+
+function CornerDelta({ position, corner, timeA, timeB, elevation, color }) {
+  const [hovered, setHovered] = useState(false);
+  const delta = timeA != null && timeB != null ? (timeA - timeB) : null;
+
+  return (
+    <group position={[position[0], (elevation || 0) + 0.02, position[1]]}>
+      <mesh
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+        visible={false}
+      />
+      <Html center style={{ pointerEvents: 'none', display: hovered ? 'block' : 'none' }}>
+        <div style={{
+          background: 'rgba(8,8,10,0.92)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(50,50,55,0.6)',
+          borderRadius: '6px',
+          padding: '4px 8px',
+          fontSize: '10px',
+          fontWeight: 700,
+          color: delta != null ? (delta > 0 ? '#e10600' : '#00a3ff') : '#888',
+          whiteSpace: 'nowrap',
+          fontFamily: 'system-ui, sans-serif',
+          letterSpacing: '0.3px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+        }}>
+          T{corner.number}: {delta != null ? `${delta > 0 ? '+' : ''}${delta.toFixed(3)}s` : '—'}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// --- Camera auto-follow ---
+
+function CameraFollow({ gapRef, animSpeed, animPaused, cameraDistance }) {
+  const { camera } = useThree();
+  const targetRef = useRef(new THREE.Vector3(0, 0, 0));
+  const angleRef = useRef(0);
+
+  useFrame((_, delta) => {
+    if (animSpeed <= 0 || animPaused) return;
+
+    // Slowly rotate angle based on which car is ahead
+    const { primaryProgress, secondaryProgress } = gapRef.current;
+    if (primaryProgress != null && secondaryProgress != null) {
+      const diff = primaryProgress - secondaryProgress;
+      // Bias camera toward the leading car
+      angleRef.current += delta * 0.3 * (1 + diff * 2);
+    } else {
+      angleRef.current += delta * 0.3;
+    }
+
+    const radius = cameraDistance * 0.8;
+    const height = cameraDistance * 0.5;
+    const targetX = Math.cos(angleRef.current) * radius;
+    const targetZ = Math.sin(angleRef.current) * radius;
+
+    // Smooth lerp toward target
+    camera.position.lerp(new THREE.Vector3(targetX, height, targetZ), delta * 1.5);
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
 }
 
 // --- Single track ribbon (semi-transparent) ---
@@ -303,7 +420,7 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary, cornerTimesA, cornerTimesB }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
@@ -377,6 +494,10 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
 
 
 
+  const trailRefA = useRef([]);
+  const trailRefB = useRef([]);
+  const trailRef = isPrimary ? trailRefA : trailRefB;
+
   return (
     <>
       <OverlayRibbon points={normalizedPoints} color={color} opacity={opacity} elevation={elevation} circuitId={circuitId} />
@@ -389,11 +510,26 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
           y={elevation[corner.index] ?? 0}
         />
       ))}
+      {showCorners && normalizedCorners.map((corner) => {
+        const timeA = cornerTimesA?.[corner.index] ?? null;
+        const timeB = cornerTimesB?.[corner.index] ?? null;
+        return (
+          <CornerDelta
+            key={`delta-${corner.number}`}
+            position={corner.position}
+            corner={corner}
+            timeA={timeA}
+            timeB={timeB}
+            elevation={elevation[corner.index] ?? 0}
+            color={color}
+          />
+        );
+      })}
       {drsLines.map((pts, i) => (
         <Line key={`ov-drs-${i}`} points={pts} color="#00ff88" lineWidth={3} transparent opacity={0.5} />
       ))}
 
-
+      <GhostTrail trailRef={trailRef} color={color} size={diag * 0.004} />
 
       <OverlayCarDot
         points={normalizedPoints}
@@ -408,6 +544,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         telemetry={telemetry}
         gapRef={gapRef}
         isPrimary={isPrimary}
+        trailRef={trailRef}
       />
     </>
   );
@@ -417,6 +554,26 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
 
 function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
   const diag = 1.4;
+
+  // Compute approximate corner times for hover deltas
+  const cornerTimesA = useMemo(() => {
+    if (!primaryTelemetry?.binned || primaryDetail.corners.length === 0) return null;
+    const map = {};
+    primaryDetail.corners.forEach(c => {
+      const bucket = primaryTelemetry.binned[c.index] || primaryTelemetry.binned[Math.floor(c.index * primaryTelemetry.binned.length / (primaryDetail.points.length || 1))];
+      if (bucket) map[c.index] = bucket.avgSpeed > 0 ? (c.index / primaryDetail.points.length) * 90 : null;
+    });
+    return map;
+  }, [primaryTelemetry, primaryDetail]);
+  const cornerTimesB = useMemo(() => {
+    if (!secondaryTelemetry?.binned || secondaryDetail.corners.length === 0) return null;
+    const map = {};
+    secondaryDetail.corners.forEach(c => {
+      const bucket = secondaryTelemetry.binned[c.index] || secondaryTelemetry.binned[Math.floor(c.index * secondaryTelemetry.binned.length / (secondaryDetail.points.length || 1))];
+      if (bucket) map[c.index] = bucket.avgSpeed > 0 ? (c.index / secondaryDetail.points.length) * 90 : null;
+    });
+    return map;
+  }, [secondaryTelemetry, secondaryDetail]);
 
   const camera = useMemo(() => {
     const fovDeg = 42;
@@ -457,6 +614,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           telemetry={primaryTelemetry}
           gapRef={gapRef}
           isPrimary={true}
+          cornerTimesA={cornerTimesA}
+          cornerTimesB={cornerTimesB}
         />
       )}
       {showTrackB && (
@@ -475,6 +634,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           telemetry={secondaryTelemetry}
           gapRef={gapRef}
           isPrimary={false}
+          cornerTimesA={cornerTimesA}
+          cornerTimesB={cornerTimesB}
         />
       )}
 
@@ -497,10 +658,12 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
       <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
 
+      <CameraFollow gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} cameraDistance={camera.distance} />
+
       <OrbitControls
         enablePan={false}
-        autoRotate
-        autoRotateSpeed={0.5}
+        autoRotate={animSpeed <= 0 || animPaused}
+        autoRotateSpeed={0.4}
         minDistance={camera.distance * 0.35}
         maxDistance={camera.distance * 2.4}
         target={[0, 0, 0]}
