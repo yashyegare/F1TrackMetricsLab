@@ -236,8 +236,8 @@ export default function App() {
 
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
-          <h1>F1 Circuits</h1>
-          <p className="subtitle">Unofficial track map explorer</p>
+          <div className="sidebar-logo">F1</div>
+          <h1>F1 Circuits<span>Unofficial track explorer</span></h1>
           <button className="cmd-trigger" onClick={() => setCmdOpen(true)} title="Command palette (Ctrl+K)">⌘K</button>
         </div>
 
@@ -271,25 +271,26 @@ export default function App() {
           ref={searchRef}
           className="search"
           type="text"
-          placeholder="Search circuits or cities…  press / to focus"
+          placeholder="Search circuits or cities…"
           value={query}
           onChange={e => setQuery(e.target.value)}
         />
 
-        <div className="filter-sort-row">
-          <select className="filter-select" value={filterContinent} onChange={e => setFilterContinent(e.target.value)}>
+        <div className="sidebar-filters">
+          <select value={filterContinent} onChange={e => setFilterContinent(e.target.value)}>
             {CONTINENTS.map(c => <option key={c} value={c}>{c === 'All' ? 'All continents' : c}</option>)}
           </select>
-          <select className="filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
 
-        <div className="unit-toggle-row">
-          <button className={`unit-btn${unit === 'metric' ? ' active' : ''}`} onClick={() => setUnit('metric')}>km / m</button>
-          <button className={`unit-btn${unit === 'imperial' ? ' active' : ''}`} onClick={() => setUnit('imperial')}>mi / ft</button>
+        <div className="sidebar-units">
+          <button className={unit === 'metric' ? 'active' : ''} onClick={() => setUnit('metric')}>km / m</button>
+          <button className={unit === 'imperial' ? 'active' : ''} onClick={() => setUnit('imperial')}>mi / ft</button>
         </div>
 
+        <div className="sidebar-list-header">Circuits · {filtered.length}</div>
         <ul className="circuit-list">
           {filtered.map(c => (
             <li key={c.id}>
