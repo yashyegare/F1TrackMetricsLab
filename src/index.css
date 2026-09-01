@@ -1852,6 +1852,7 @@ body {
 .overlay-3d-container {
   width: 100%;
   max-width: 900px;
+  position: relative;
 }
 
 .overlay-3d-canvas-wrap {
@@ -1884,6 +1885,134 @@ body {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* ---- Overlay controls ---- */
+
+.overlay-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: rgba(14, 14, 16, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid #222226;
+  border-radius: 8px;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 5;
+}
+
+.overlay-ctrl-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #1a1a1e;
+  border: 1px solid #2a2a2e;
+  border-radius: 5px;
+  color: #8a8a90;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.overlay-ctrl-btn:hover {
+  background: #222226;
+  color: #d8d8db;
+}
+
+.overlay-ctrl-btn.active {
+  background: #282830;
+  color: #e8e8ea;
+  border-color: #3a3a42;
+}
+
+.overlay-ctrl-btn.track-toggle {
+  border-left-width: 2px;
+}
+
+.track-toggle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ---- Overlay stat comparison card ---- */
+
+.overlay-stat-card {
+  background: rgba(14, 14, 16, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid #222226;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.overlay-stat-diff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(40, 40, 44, 0.6);
+}
+
+.overlay-stat-diff:last-child {
+  border-bottom: none;
+}
+
+.overlay-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6a6a70;
+  width: 60px;
+  flex-shrink: 0;
+}
+
+.overlay-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay-stat-vs {
+  font-size: 8px;
+  color: #444;
+  font-weight: 500;
+}
+
+.overlay-stat-badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.overlay-stat-badge.winner-a {
+  color: #e10600;
+  background: rgba(225, 6, 0, 0.1);
+}
+
+.overlay-stat-badge.winner-b {
+  color: #00a3ff;
+  background: rgba(0, 163, 255, 0.1);
+}
+
+.overlay-stat-badge.tie {
+  color: #6a6a70;
+  background: rgba(100, 100, 104, 0.1);
 }
 
 /* ---- Unit toggle (sidebar) ---- */

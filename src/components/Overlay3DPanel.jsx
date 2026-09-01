@@ -1,6 +1,6 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard } from '@react-three/drei';
+import { OrbitControls, Line, Grid, ContactShadows, Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
@@ -61,9 +61,10 @@ function interpolateAlongPath3D(points, elevation, cumulative, total, ratio) {
 
 // --- Animated car dot for overlay ---
 
-function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00' }) {
+function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef }) {
   const groupRef = useRef();
-  const progress = useRef(Math.random());
+  const localProgress = useRef(Math.random());
+  const progressRef = useRef(Math.random());
 
   const sphereR = size;
 
@@ -75,13 +76,19 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
     }
     groupRef.current.visible = true;
     const dt = Math.min(delta, 0.1);
-    progress.current = (progress.current + dt * speed * 0.08) % 1;
-    const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progress.current);
+    if (sharedProgressRef) {
+      // Sync mode: read shared progress
+      progressRef.current = sharedProgressRef.current;
+    } else {
+      localProgress.current = (localProgress.current + dt * speed * 0.08) % 1;
+      progressRef.current = localProgress.current;
+    }
+    const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
     groupRef.current.position.set(pos[0], pos[1], pos[2]);
   });
 
   const initPos = useMemo(() =>
-    interpolateAlongPath3D(points, elevation, cumulative, total, progress.current),
+    interpolateAlongPath3D(points, elevation, cumulative, total, 0.5),
     [points, elevation, cumulative, total]
   );
 
@@ -154,6 +161,26 @@ function OverlayCornerMarker({ position, poleHeight, accentColor, y = 0 }) {
   );
 }
 
+// --- Floating circuit label in 3D ---
+
+function CircuitLabel({ text, position, color, fontSize = 0.035 }) {
+  return (
+    <Billboard position={position} follow lockX={false} lockY={false} lockZ={false}>
+      <Text
+        fontSize={fontSize}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.002}
+        outlineColor="#000000"
+        font={undefined}
+      >
+        {text}
+      </Text>
+    </Billboard>
+  );
+}
+
 // --- Track wrapper inside the overlay scene ---
 
 function computeOverlayElevation(originalPoints, corners, altitudeMeters, normalizedPoints) {
@@ -170,8 +197,6 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
       raw[idx] = Math.max(raw[idx], intensity * falloff);
     }
   }
-  // Scale elevation to overlay scene units (~1 unit across)
-  // Match the poleHeight scale: diag * 0.02 clamped to 0.008–0.04
   const xs = normalizedPoints.map(p => p[0]);
   const zs = normalizedPoints.map(p => p[1]);
   const width = Math.max(...xs) - Math.min(...xs);
@@ -184,7 +209,7 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0 }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
@@ -256,6 +281,18 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
     }));
   }, [detail.corners, detail.points, showCorners]);
 
+  // Find label position (above the highest point of the track)
+  const labelPos = useMemo(() => {
+    const maxXi = xs.indexOf(Math.max(...xs));
+    const maxZi = zs.indexOf(Math.max(...zs));
+    const midI = Math.floor((maxXi + maxZi) / 2) % normalizedPoints.length;
+    return [
+      normalizedPoints[midI][0],
+      (elevation[midI] ?? 0) + poleHeight * 4,
+      normalizedPoints[midI][1],
+    ];
+  }, [normalizedPoints, elevation, xs, zs, poleHeight]);
+
   return (
     <>
       <OverlayRibbon points={normalizedPoints} color={color} opacity={opacity} elevation={elevation} circuitId={circuitId} />
@@ -273,6 +310,11 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         <Line key={`ov-drs-${i}`} points={pts} color="#00ff88" lineWidth={3} transparent opacity={0.5} />
       ))}
 
+      {/* Floating circuit label */}
+      {showLabel && (
+        <CircuitLabel text={detail.name || ''} position={labelPos} color={color} fontSize={0.03} />
+      )}
+
       <OverlayCarDot
         points={normalizedPoints}
         elevation={elevation}
@@ -282,6 +324,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         paused={animPaused}
         size={diag * 0.008}
         color="#ffcc00"
+        sharedProgressRef={sharedProgressRef}
       />
     </>
   );
@@ -289,7 +332,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
 
 // --- Main overlay scene ---
 
-function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused }) {
+function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, sharedProgressRef }) {
   const diag = 1.4;
 
   const camera = useMemo(() => {
@@ -315,8 +358,36 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       <directionalLight position={[diag * 0.6, diag * 0.9, diag * 0.35]} intensity={1.15} />
       <directionalLight position={[-diag * 0.5, diag * 0.4, -diag * 0.4]} intensity={0.35} />
 
-      <OverlayTrack detail={primaryDetail} color="#e10600" opacity={0.72} showCorners altitude={primaryAltitude} circuitId={primaryId} drsZones={primaryDrsZones} animSpeed={animSpeed} animPaused={animPaused} />
-      <OverlayTrack detail={secondaryDetail} color="#00a3ff" opacity={0.55} showCorners altitude={secondaryAltitude} circuitId={secondaryId} drsZones={secondaryDrsZones} animSpeed={animSpeed} animPaused={animPaused} />
+      {showTrackA && (
+        <OverlayTrack
+          detail={primaryDetail}
+          color="#e10600"
+          opacity={showTrackB ? 0.72 : 0.85}
+          showCorners
+          altitude={primaryAltitude}
+          circuitId={primaryId}
+          drsZones={primaryDrsZones}
+          animSpeed={animSpeed}
+          animPaused={animPaused}
+          showLabel={showLabels}
+          sharedProgressRef={syncMode ? sharedProgressRef : null}
+        />
+      )}
+      {showTrackB && (
+        <OverlayTrack
+          detail={secondaryDetail}
+          color="#00a3ff"
+          opacity={showTrackA ? 0.55 : 0.85}
+          showCorners
+          altitude={secondaryAltitude}
+          circuitId={secondaryId}
+          drsZones={secondaryDrsZones}
+          animSpeed={animSpeed}
+          animPaused={animPaused}
+          showLabel={showLabels}
+          sharedProgressRef={syncMode ? sharedProgressRef : null}
+        />
+      )}
 
       <Grid
         position={[0, -0.02, 0]}
@@ -333,6 +404,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       />
       <ContactShadows position={[0, -0.015, 0]} opacity={0.4} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />
 
+      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} />
+
       <OrbitControls
         enablePan={false}
         autoRotate
@@ -345,10 +418,87 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
   );
 }
 
+// --- Stat diff card ---
+
+function StatDiff({ label, valA, valB, colorA = '#e10600', colorB = '#00a3ff', format, diffFormat }) {
+  const fmt = format || ((v) => v);
+  // Only compute numeric diff if both values are numbers
+  const numA = typeof valA === 'number' ? valA : null;
+  const numB = typeof valB === 'number' ? valB : null;
+  const diff = numA != null && numB != null ? numA - numB : null;
+  const absDiff = diff != null ? Math.abs(diff) : null;
+  const winner = diff != null ? (diff > 0 ? 'A' : diff < 0 ? 'B' : null) : null;
+  const displayDiff = diffFormat ? diffFormat(absDiff, valA, valB) : (absDiff != null ? absDiff : null);
+  return (
+    <div className="overlay-stat-diff">
+      <span className="overlay-stat-label">{label}</span>
+      <span className="overlay-stat-val" style={{ color: colorA }}>{fmt(valA)}</span>
+      <span className="overlay-stat-vs">vs</span>
+      <span className="overlay-stat-val" style={{ color: colorB }}>{fmt(valB)}</span>
+      {displayDiff != null && (
+        <span className={`overlay-stat-badge ${winner === 'A' ? 'winner-a' : winner === 'B' ? 'winner-b' : 'tie'}`}>
+          {winner === 'A' ? '▲' : winner === 'B' ? '▼' : '—'} {displayDiff}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// --- Main export ---
+
+// Sync progress driver (inside Canvas)
+function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode }) {
+  useFrame((_, delta) => {
+    if (syncMode && animSpeed > 0 && !animPaused) {
+      sharedProgressRef.current = (sharedProgressRef.current + delta * 0.3 * animSpeed) % 1;
+    }
+  });
+  return null;
+}
+
 export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false }) {
+  const [showLabels, setShowLabels] = useState(true);
+  const [showTrackA, setShowTrackA] = useState(true);
+  const [showTrackB, setShowTrackB] = useState(true);
+  const [syncMode, setSyncMode] = useState(false);
+  const sharedProgressRef = useRef(Math.random());
+
+  const fmtLen = (m) => m != null ? `${(m / 1000).toFixed(3)} km` : '—';
+  const fmtCorners = (n) => n != null ? `${n}` : '—';
+  const fmtAlt = (m) => m != null ? `${m} m` : '—';
+
   return (
     <div className="compare3d-wrapper">
       <div className="overlay-3d-container">
+        {/* Overlay controls */}
+        <div className="overlay-controls">
+          <button className={`overlay-ctrl-btn ${showLabels ? 'active' : ''}`} onClick={() => setShowLabels(l => !l)} title="Toggle circuit name labels">
+            🏷 Labels
+          </button>
+          <button className={`overlay-ctrl-btn ${syncMode ? 'active' : ''}`} onClick={() => setSyncMode(s => !s)} title="Sync both car dots to the same progress">
+            🔗 Sync
+          </button>
+          <div className="toolbar-separator" style={{ height: 16, alignSelf: 'center' }} />
+          <button
+            className={`overlay-ctrl-btn track-toggle ${showTrackA ? 'active' : ''}`}
+            style={showTrackA ? { borderColor: '#e10600' } : {}}
+            onClick={() => setShowTrackA(a => !a)}
+            title={`Show/hide ${primary.name}`}
+          >
+            <span className="track-toggle-dot" style={{ background: '#e10600' }} />
+            {primary.name}
+          </button>
+          <button
+            className={`overlay-ctrl-btn track-toggle ${showTrackB ? 'active' : ''}`}
+            style={showTrackB ? { borderColor: '#00a3ff' } : {}}
+            onClick={() => setShowTrackB(b => !b)}
+            title={`Show/hide ${secondary.name}`}
+          >
+            <span className="track-toggle-dot" style={{ background: '#00a3ff' }} />
+            {secondary.name}
+          </button>
+        </div>
+
         <div className="overlay-3d-canvas-wrap">
           <OverlayScene
             primaryDetail={primaryDetail}
@@ -361,8 +511,14 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             secondaryDrsZones={secondary.drsZones || 0}
             animSpeed={animSpeed}
             animPaused={animPaused}
+            showLabels={showLabels}
+            showTrackA={showTrackA}
+            showTrackB={showTrackB}
+            syncMode={syncMode}
+            sharedProgressRef={sharedProgressRef}
           />
         </div>
+
         <div className="overlay-3d-legend">
           <span className="overlay-legend-item">
             <span className="overlay-legend-dot" style={{ background: '#e10600' }} />
@@ -373,10 +529,22 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             {secondary.name} ({secondary.location})
           </span>
         </div>
+
+      </div>
+
+      {/* Stat comparison card — below the canvas */}
+      <div className="overlay-stat-card">
+        <StatDiff label="Length" valA={primary.length / 1000} valB={secondary.length / 1000} format={(v) => v != null ? `${v.toFixed(3)} km` : '—'} diffFormat={(d) => d != null ? `${d.toFixed(3)} km` : null} />
+        <StatDiff label="Corners" valA={primaryDetail.corners.length} valB={secondaryDetail.corners.length} />
+        <StatDiff label="Altitude" valA={primary.altitude} valB={secondary.altitude} format={(v) => v != null ? `${v} m` : '—'} diffFormat={(d) => d != null ? `${d} m` : null} />
+        <StatDiff label="DRS Zones" valA={primary.drsZones || 0} valB={secondary.drsZones || 0} />
+        <StatDiff label="Opened" valA={primary.opened} valB={secondary.opened} />
+        <StatDiff label="Direction" valA={primaryDetail.direction} valB={secondaryDetail.direction} format={(v) => v || '—'} />
       </div>
       <p className="compare-note">
         Both tracks are normalized to the same bounding box so their shapes are directly comparable.
         Semi-transparency shows overlap. Corner markers and track width are stylized, not to scale.
+        {syncMode && ' Sync mode: both car dots advance at the same progress for direct speed comparison.'}
       </p>
     </div>
   );
