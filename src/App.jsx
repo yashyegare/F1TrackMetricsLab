@@ -54,25 +54,61 @@ function TrackHistory({ history }) {
   const years = history.yearsHosted;
   const minYear = Math.min(...years);
   const maxYear = Math.max(...years);
-  const hostedSet = new Set(years);
   const totalYears = maxYear - minYear + 1;
+  const hostedYears = [...years].sort((a, b) => a - b);
+  // Determine compact mode: show only milestones when too many GPs
+  const compact = hostedYears.length > 18;
+  // Find gaps
+  const gaps = [];
+  for (let i = 1; i < hostedYears.length; i++) {
+    const gap = hostedYears[i] - hostedYears[i - 1];
+    if (gap > 1) gaps.push({ from: hostedYears[i - 1], to: hostedYears[i], size: gap - 1 });
+  }
+  const gapStarts = new Set(gaps.map(g => g.to));
+  // In compact mode, only render milestone dots
+  const milestoneYears = compact
+    ? hostedYears.filter((y, i) => {
+        const isEdge = y === minYear || y === maxYear;
+        const isDecade = y % 10 === 0;
+        const isGapTarget = gapStarts.has(y);
+        return isEdge || isDecade || isGapTarget;
+      })
+    : hostedYears;
   return (
     <div className="track-history">
       <div className="history-timeline">
         <div className="history-line" />
-        <div className="history-dots">
-          {Array.from({ length: totalYears }, (_, i) => {
-            const y = minYear + i;
-            const hosted = hostedSet.has(y);
+        <div className={`history-dots${compact ? ' compact' : ''}`}>
+          {milestoneYears.map((y, i) => {
             const isDecade = y % 10 === 0;
+            const isStart = y === minYear;
+            const isEnd = y === maxYear;
+            const isGapTarget = gapStarts.has(y);
+            const prevMilestone = i > 0 ? milestoneYears[i - 1] : null;
+            const gapBetween = prevMilestone && y - prevMilestone > 1 ? y - prevMilestone - 1 : 0;
+            // Count actual hosted years in the gap
+            const yearsInRange = hostedYears.filter(v => v > prevMilestone && v < y).length;
             return (
-              <div key={y} className="history-dot-wrap">
-                <div
-                  className={`history-dot${hosted ? ' active' : ''}${isDecade ? ' decade' : ''}`}
-                  title={`${y}${hosted ? ' — GP hosted' : ''}`}
-                />
-                {isDecade && <span className="history-year-label">{y}</span>}
-              </div>
+              <React.Fragment key={y}>
+                {gapBetween > 0 && (
+                  <div
+                    className="history-gap-bridge"
+                    title={`${yearsInRange} GP${yearsInRange !== 1 ? 's' : ''} in ${prevMilestone}–${y} (no GP: ${gapBetween}yr${gapBetween > 1 ? 's' : ''})`}
+                  >
+                    <span className="gap-line" />
+                    <span className="gap-label">{yearsInRange > 0 ? `${yearsInRange} GP${yearsInRange !== 1 ? 's' : ''}` : 'No GP'}</span>
+                    <span className="gap-line" />
+                  </div>
+                )}
+                <div className="history-dot-wrap" title={`${y}${isStart ? ' (first GP)' : isEnd ? ' (latest)' : ''}`} data-year={y}>
+                  <div
+                    className={`history-dot active${isDecade ? ' decade' : ''}${isStart ? ' start' : ''}${isEnd ? ' end' : ''}`}
+                  />
+                  {(isStart || isEnd || isDecade || isGapTarget) && (
+                    <span className="history-year-label">{y}</span>
+                  )}
+                </div>
+              </React.Fragment>
             );
           })}
         </div>

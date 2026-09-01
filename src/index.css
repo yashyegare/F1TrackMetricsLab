@@ -2160,9 +2160,22 @@ body {
 
 .history-dots {
   display: flex;
+  align-items: flex-start;
   gap: 1px;
   position: relative;
   z-index: 1;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 14px;
+}
+
+.history-dots::-webkit-scrollbar { display: none; }
+
+.history-dots.compact {
+  gap: 2px;
 }
 
 .history-dot-wrap {
@@ -2171,48 +2184,105 @@ body {
   align-items: center;
   gap: 3px;
   position: relative;
+  cursor: pointer;
+}
+
+/* Tooltip on hover */
+.history-dot-wrap::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1a1a1e;
+  border: 1px solid #2c2c31;
+  color: #e8e8ea;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 10;
+}
+
+.history-dot-wrap:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .history-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #1e1e22;
-  border: 1px solid #2a2a2e;
+  background: #252528;
+  border: 1.5px solid #2a2a2e;
   flex-shrink: 0;
-  transition: all 0.15s;
-  cursor: default;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
-.history-dot:hover {
-  transform: scale(1.4);
-  border-color: #444;
+.history-dot-wrap:hover .history-dot {
+  transform: scale(1.6);
+  border-color: #555;
+  background: #333;
 }
 
 .history-dot.active {
   background: #e10600;
-  border-color: #e10600;
-  box-shadow: 0 0 6px rgba(225, 6, 0, 0.4);
+  border-color: #ff1a15;
+  box-shadow: 0 0 5px rgba(225, 6, 0, 0.35);
 }
 
-.history-dot.active:hover {
-  box-shadow: 0 0 10px rgba(225, 6, 0, 0.6);
-  transform: scale(1.5);
+.history-dot-wrap:hover .history-dot.active {
+  box-shadow: 0 0 12px rgba(225, 6, 0, 0.7), 0 0 24px rgba(225, 6, 0, 0.3);
+  transform: scale(1.7);
+  border-color: #ff3330;
+  background: #ff1a15;
 }
 
 .history-dot.decade {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   margin-top: -1px;
+  border-width: 2px;
 }
 
 .history-year-label {
   font-size: 7px;
-  color: #444;
+  color: #555558;
   font-weight: 600;
   white-space: nowrap;
   position: absolute;
   top: 14px;
+  letter-spacing: 0.3px;
+}
+
+.history-gap-bridge {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 1px;
+  min-width: 24px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gap-line {
+  flex: 1;
+  min-width: 4px;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, #2c2c31 0, #2c2c31 2px, transparent 2px, transparent 4px);
+}
+
+.gap-label {
+  font-size: 7px;
+  color: #3a3a3e;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0 1px;
 }
 
 .history-summary {
