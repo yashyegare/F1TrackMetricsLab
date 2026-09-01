@@ -1929,6 +1929,34 @@ body {
   flex-shrink: 0;
 }
 
+/* ---- Overlay screenshot button ---- */
+
+.overlay-screenshot-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 10, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(50, 50, 55, 0.6);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-screenshot-btn:hover {
+  background: rgba(20, 20, 24, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
 /* ---- Overlay stat comparison card ---- */
 
 .overlay-stat-card {

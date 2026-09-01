@@ -603,6 +603,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               secondaryDetail={secondaryDetail}
               animSpeed={animSpeed}
               animPaused={animPaused}
+              primaryTelemetry={primaryTelemetry?.projected}
+              secondaryTelemetry={secondaryTelemetry?.projected}
             />
           </Suspense>
         )}

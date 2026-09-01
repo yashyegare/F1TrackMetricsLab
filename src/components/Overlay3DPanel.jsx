@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Line, Grid, ContactShadows, Billboard, Text } from '@react-three/drei';
+import { OrbitControls, Line, Grid, ContactShadows, Billboard, Text, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getCachedEdges, getCachedRibbonGeometry } from '../utils/ribbonCache';
 import { detectStraights } from '../utils/drsDetect';
@@ -59,12 +59,29 @@ function interpolateAlongPath3D(points, elevation, cumulative, total, ratio) {
   return [x, y0 + 0.003, z];
 }
 
+// --- Interpolate speed from telemetry at a given progress ---
+
+function interpolateTelemetrySpeed(telemetry, progress) {
+  if (!telemetry || telemetry.length === 0) return null;
+  const p = ((progress % 1) + 1) % 1;
+  // Find the two nearest telemetry points by progress
+  let i = 1;
+  while (i < telemetry.length && telemetry[i].progress < p) i++;
+  if (i >= telemetry.length) return telemetry[telemetry.length - 1].speed;
+  const prev = telemetry[i - 1];
+  const curr = telemetry[i];
+  const segLen = curr.progress - prev.progress || 1;
+  const t = (p - prev.progress) / segLen;
+  return prev.speed + (curr.speed - prev.speed) * t;
+}
+
 // --- Animated car dot for overlay ---
 
-function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef }) {
+function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary }) {
   const groupRef = useRef();
   const localProgress = useRef(Math.random());
   const progressRef = useRef(Math.random());
+  const lastTime = useRef(null);
 
   const sphereR = size;
 
@@ -76,13 +93,51 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
     }
     groupRef.current.visible = true;
     const dt = Math.min(delta, 0.1);
+
     if (sharedProgressRef) {
-      // Sync mode: read shared progress
       progressRef.current = sharedProgressRef.current;
+    } else if (telemetry && telemetry.length > 0) {
+      // Telemetry-paced: variable speed based on real data
+      const now = performance.now();
+      if (lastTime.current === null) lastTime.current = now;
+      const elapsed = (now - lastTime.current) / 1000; // seconds
+      lastTime.current = now;
+
+      // Find current speed from telemetry
+      const currentSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
+      if (currentSpeed != null && currentSpeed > 0) {
+        // Convert km/h to progress/second: speed (km/h) / track_length_km / 3600
+        // Normalize: at 300 km/h on a 5km track, one lap takes ~60s
+        // We want the dot to complete in roughly real lap time
+        const trackLengthKm = total * 0.001; // approximate from cumulative
+        const progressPerSecond = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
+        progressRef.current = (progressRef.current + elapsed * progressPerSecond * speed) % 1;
+      } else {
+        // Fallback to constant speed
+        progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
+      }
+
+      // Update gap reference
+      if (gapRef && isPrimary) {
+        gapRef.current.primaryProgress = progressRef.current;
+        gapRef.current.primaryTime = performance.now();
+      } else if (gapRef && !isPrimary) {
+        gapRef.current.secondaryProgress = progressRef.current;
+        gapRef.current.secondaryTime = performance.now();
+      }
     } else {
       localProgress.current = (localProgress.current + dt * speed * 0.08) % 1;
       progressRef.current = localProgress.current;
+
+      if (gapRef && isPrimary) {
+        gapRef.current.primaryProgress = progressRef.current;
+        gapRef.current.primaryTime = performance.now();
+      } else if (gapRef && !isPrimary) {
+        gapRef.current.secondaryProgress = progressRef.current;
+        gapRef.current.secondaryTime = performance.now();
+      }
     }
+
     const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
     groupRef.current.position.set(pos[0], pos[1], pos[2]);
   });
@@ -163,7 +218,7 @@ function OverlayCornerMarker({ position, poleHeight, accentColor, y = 0 }) {
 
 // --- Floating circuit label in 3D ---
 
-function CircuitLabel({ text, position, color, fontSize = 0.035 }) {
+function CircuitLabel({ text, position, color, fontSize = 0.05 }) {
   return (
     <Billboard position={position} follow lockX={false} lockY={false} lockZ={false}>
       <Text
@@ -171,13 +226,69 @@ function CircuitLabel({ text, position, color, fontSize = 0.035 }) {
         color={color}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.002}
+        outlineWidth={fontSize * 0.08}
         outlineColor="#000000"
-        font={undefined}
+        fontWeight="bold"
+        maxWidth={2}
       >
         {text}
       </Text>
     </Billboard>
+  );
+}
+
+// --- Live gap readout ---
+
+function GapReadout({ gapRef, animSpeed, animPaused }) {
+  const [gapText, setGapText] = useState('');
+  const [ahead, setAhead] = useState(null); // 'A', 'B', or null
+
+  useFrame(() => {
+    if (animSpeed <= 0 || animPaused || !gapRef.current.primaryTime) {
+      setGapText('');
+      setAhead(null);
+      return;
+    }
+    const { primaryProgress, secondaryProgress, primaryTime, secondaryTime } = gapRef.current;
+    if (primaryProgress == null || secondaryProgress == null) return;
+
+    // Estimate time gap based on progress difference and track lengths
+    // progress 0-1 represents one full lap
+    const pDiff = primaryProgress - secondaryProgress;
+    // Convert to "seconds ahead" — rough estimate assuming ~90s lap
+    const lapTimeA = 90; // approximate
+    const gapSeconds = Math.abs(pDiff) * lapTimeA;
+
+    if (gapSeconds < 0.05) {
+      setGapText('Side by side');
+      setAhead(null);
+    } else {
+      const leader = pDiff > 0 ? 'A' : 'B';
+      setGapText(`${gapSeconds.toFixed(2)}s`);
+      setAhead(leader);
+    }
+  });
+
+  if (animSpeed <= 0 || !gapText) return null;
+
+  return (
+    <Html center position={[0, 0.15, 0]} style={{ pointerEvents: 'none' }}>
+      <div style={{
+        background: 'rgba(8,8,10,0.9)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(50,50,55,0.6)',
+        borderRadius: '6px',
+        padding: '3px 8px',
+        fontSize: '10px',
+        fontWeight: 700,
+        color: ahead === 'A' ? '#e10600' : ahead === 'B' ? '#00a3ff' : '#888',
+        whiteSpace: 'nowrap',
+        fontFamily: 'system-ui, sans-serif',
+        letterSpacing: '0.3px',
+      }}>
+        {gapText}
+      </div>
+    </Html>
   );
 }
 
@@ -209,7 +320,7 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
@@ -281,17 +392,12 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
     }));
   }, [detail.corners, detail.points, showCorners]);
 
-  // Find label position (above the highest point of the track)
+  // Label position (center of track, elevated)
   const labelPos = useMemo(() => {
-    const maxXi = xs.indexOf(Math.max(...xs));
-    const maxZi = zs.indexOf(Math.max(...zs));
-    const midI = Math.floor((maxXi + maxZi) / 2) % normalizedPoints.length;
-    return [
-      normalizedPoints[midI][0],
-      (elevation[midI] ?? 0) + poleHeight * 4,
-      normalizedPoints[midI][1],
-    ];
-  }, [normalizedPoints, elevation, xs, zs, poleHeight]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+    return [cx, poleHeight * 6, cz];
+  }, [xs, zs, poleHeight]);
 
   return (
     <>
@@ -305,14 +411,12 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
           y={elevation[corner.index] ?? 0}
         />
       ))}
-      {/* DRS zone highlights */}
       {drsLines.map((pts, i) => (
         <Line key={`ov-drs-${i}`} points={pts} color="#00ff88" lineWidth={3} transparent opacity={0.5} />
       ))}
 
-      {/* Floating circuit label */}
       {showLabel && (
-        <CircuitLabel text={detail.name || ''} position={labelPos} color={color} fontSize={0.03} />
+        <CircuitLabel text={detail.name || ''} position={labelPos} color={color} fontSize={0.06} />
       )}
 
       <OverlayCarDot
@@ -325,6 +429,9 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         size={diag * 0.008}
         color="#ffcc00"
         sharedProgressRef={sharedProgressRef}
+        telemetry={telemetry}
+        gapRef={gapRef}
+        isPrimary={isPrimary}
       />
     </>
   );
@@ -332,7 +439,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
 
 // --- Main overlay scene ---
 
-function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, sharedProgressRef }) {
+function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
   const diag = 1.4;
 
   const camera = useMemo(() => {
@@ -371,6 +478,9 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           animPaused={animPaused}
           showLabel={showLabels}
           sharedProgressRef={syncMode ? sharedProgressRef : null}
+          telemetry={primaryTelemetry}
+          gapRef={gapRef}
+          isPrimary={true}
         />
       )}
       {showTrackB && (
@@ -386,6 +496,9 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           animPaused={animPaused}
           showLabel={showLabels}
           sharedProgressRef={syncMode ? sharedProgressRef : null}
+          telemetry={secondaryTelemetry}
+          gapRef={gapRef}
+          isPrimary={false}
         />
       )}
 
@@ -406,6 +519,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
       <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} />
 
+      <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
+
       <OrbitControls
         enablePan={false}
         autoRotate
@@ -418,9 +533,8 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
   );
 }
 
-// --- Main export ---
+// --- Sync progress driver (inside Canvas) ---
 
-// Sync progress driver (inside Canvas)
 function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode }) {
   useFrame((_, delta) => {
     if (syncMode && animSpeed > 0 && !animPaused) {
@@ -430,16 +544,26 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
   return null;
 }
 
-export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false }) {
+// --- Main export ---
+
+export default function Overlay3DPanel({ primary, secondary, primaryDetail, secondaryDetail, animSpeed = 0, animPaused = false, primaryTelemetry, secondaryTelemetry }) {
   const [showLabels, setShowLabels] = useState(true);
   const [showTrackA, setShowTrackA] = useState(true);
   const [showTrackB, setShowTrackB] = useState(true);
   const [syncMode, setSyncMode] = useState(false);
   const sharedProgressRef = useRef(Math.random());
+  const gapRef = useRef({ primaryProgress: null, secondaryProgress: null, primaryTime: null, secondaryTime: null });
+  const canvasWrapRef = useRef(null);
 
-  const fmtLen = (m) => m != null ? `${(m / 1000).toFixed(3)} km` : '—';
-  const fmtCorners = (n) => n != null ? `${n}` : '—';
-  const fmtAlt = (m) => m != null ? `${m} m` : '—';
+  // Screenshot/export
+  const handleScreenshot = useCallback(() => {
+    const canvas = canvasWrapRef.current?.querySelector('canvas');
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `overlay-${primary.id}-vs-${secondary.id}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, [primary.id, secondary.id]);
 
   return (
     <div className="compare3d-wrapper">
@@ -473,7 +597,12 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           </button>
         </div>
 
-        <div className="overlay-3d-canvas-wrap">
+        {/* Screenshot button */}
+        <button className="overlay-screenshot-btn" onClick={handleScreenshot} title="Download overlay as PNG">
+          📷
+        </button>
+
+        <div className="overlay-3d-canvas-wrap" ref={canvasWrapRef}>
           <OverlayScene
             primaryDetail={primaryDetail}
             secondaryDetail={secondaryDetail}
@@ -490,6 +619,9 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             showTrackB={showTrackB}
             syncMode={syncMode}
             sharedProgressRef={sharedProgressRef}
+            primaryTelemetry={primaryTelemetry}
+            secondaryTelemetry={secondaryTelemetry}
+            gapRef={gapRef}
           />
         </div>
 
