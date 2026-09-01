@@ -259,8 +259,10 @@ export default function App() {
 
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">F1</div>
-          <h1>F1 Circuits<span>Unofficial track explorer</span></h1>
+          <button className="sidebar-brand" onClick={() => setMode(null)} title="Go to homepage">
+            <div className="sidebar-logo">F1</div>
+            <h1>F1 Circuits<span>Unofficial track explorer</span></h1>
+          </button>
           <button className="cmd-trigger" onClick={() => setCmdOpen(true)} title="Command palette (Ctrl+K)">⌘K</button>
         </div>
 

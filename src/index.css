@@ -43,6 +43,26 @@ body {
   position: relative;
 }
 
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.sidebar-brand:hover {
+  opacity: 0.85;
+}
+
 .sidebar-header::before {
   content: '';
   position: absolute;
