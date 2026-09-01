@@ -22,12 +22,14 @@ body {
 .sidebar {
   width: 320px;
   min-width: 320px;
+  height: 100vh;
   background: #141416;
   border-right: 1px solid #26262a;
   display: flex;
   flex-direction: column;
   padding: 20px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-header {
