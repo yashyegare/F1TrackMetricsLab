@@ -1853,19 +1853,21 @@ body {
   width: 100%;
   max-width: 900px;
   position: relative;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid #2c2c31;
-  background: #0a0a0c;
+  border: 1px solid rgba(44, 44, 49, 0.6);
+  background: #0c0c0e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .overlay-3d-canvas-wrap {
   width: 100%;
-  height: 540px;
-  background: radial-gradient(ellipse at 50% 40%, #141418 0%, #0a0a0c 60%, #060608 100%);
+  height: 520px;
+  background: radial-gradient(ellipse at 50% 45%, #151518 0%, #0c0c0e 55%, #080808 100%);
   border: none;
   border-radius: 0;
   overflow: hidden;
+  position: relative;
 }
 
 /* ---- Overlay controls (floating HUD) ---- */
@@ -1873,17 +1875,17 @@ body {
 .overlay-controls {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 4px 6px;
-  background: rgba(10, 10, 12, 0.88);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(44, 44, 49, 0.7);
+  gap: 2px;
+  padding: 5px 7px;
+  background: rgba(8, 8, 10, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(50, 50, 55, 0.6);
   border-radius: 8px;
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 12px;
+  left: 12px;
   z-index: 5;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
 .overlay-ctrl-btn {
@@ -1893,10 +1895,10 @@ body {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 5px;
-  color: #6a6a70;
+  color: #5a5a5e;
   font-size: 10px;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 5px 9px;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -1905,19 +1907,19 @@ body {
 
 .overlay-ctrl-btn:hover {
   background: rgba(255, 255, 255, 0.04);
-  color: #b0b0b4;
+  color: #9a9a9e;
 }
 
 .overlay-ctrl-btn.active {
   background: rgba(255, 255, 255, 0.06);
-  color: #e8e8ea;
-  border-color: rgba(255, 255, 255, 0.08);
+  color: #d8d8da;
+  border-color: rgba(255, 255, 255, 0.07);
 }
 
 .overlay-ctrl-btn.track-toggle {
   border-left: 2px solid;
   padding-left: 10px;
-  margin-left: 2px;
+  margin-left: 3px;
 }
 
 .track-toggle-dot {
@@ -1927,15 +1929,85 @@ body {
   flex-shrink: 0;
 }
 
+/* ---- Overlay stat comparison card ---- */
+
+.overlay-stat-card {
+  background: rgba(12, 12, 14, 0.98);
+  border-top: 1px solid rgba(44, 44, 49, 0.35);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.overlay-stat-diff {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(44, 44, 49, 0.2);
+}
+
+.overlay-stat-diff:last-child {
+  border-bottom: none;
+}
+
+.overlay-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #4a4a4e;
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.overlay-stat-val {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay-stat-vs {
+  font-size: 9px;
+  color: #2a2a2e;
+  font-weight: 500;
+  margin: 0 2px;
+}
+
+.overlay-stat-badge {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+}
+
+.overlay-stat-badge.winner-a {
+  color: #e10600;
+  background: rgba(225, 6, 0, 0.07);
+}
+
+.overlay-stat-badge.winner-b {
+  color: #00a3ff;
+  background: rgba(0, 163, 255, 0.07);
+}
+
+.overlay-stat-badge.tie {
+  color: #3a3a3e;
+  background: rgba(100, 100, 104, 0.05);
+}
+
 /* ---- Overlay footer ---- */
 
 .overlay-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
-  background: rgba(10, 10, 12, 0.98);
-  border-top: 1px solid rgba(44, 44, 49, 0.3);
+  padding: 8px 16px;
+  background: rgba(8, 8, 10, 0.98);
+  border-top: 1px solid rgba(44, 44, 49, 0.25);
 }
 
 .overlay-footer-info {
@@ -1946,7 +2018,7 @@ body {
 
 .overlay-footer-note {
   font-size: 9px;
-  color: #3a3a3e;
+  color: #333;
   font-weight: 500;
   letter-spacing: 0.3px;
 }
@@ -1970,7 +2042,7 @@ body {
   gap: 5px;
   font-size: 10px;
   font-weight: 600;
-  color: #7a7a80;
+  color: #6a6a6e;
 }
 
 .overlay-legend-dot {
@@ -1982,78 +2054,8 @@ body {
 
 .overlay-legend-sep {
   font-size: 9px;
-  color: #2a2a2e;
+  color: #252528;
   font-weight: 500;
-}
-
-/* ---- Overlay stat comparison card ---- */
-
-.overlay-stat-card {
-  background: rgba(14, 14, 16, 0.95);
-  border-top: 1px solid rgba(44, 44, 49, 0.4);
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.overlay-stat-diff {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(44, 44, 49, 0.25);
-}
-
-.overlay-stat-diff:last-child {
-  border-bottom: none;
-}
-
-.overlay-stat-label {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #5a5a5e;
-  width: 62px;
-  flex-shrink: 0;
-}
-
-.overlay-stat-val {
-  font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.overlay-stat-vs {
-  font-size: 9px;
-  color: #333;
-  font-weight: 500;
-  margin: 0 2px;
-}
-
-.overlay-stat-badge {
-  margin-left: auto;
-  font-size: 9px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  letter-spacing: 0.2px;
-}
-
-.overlay-stat-badge.winner-a {
-  color: #e10600;
-  background: rgba(225, 6, 0, 0.08);
-}
-
-.overlay-stat-badge.winner-b {
-  color: #00a3ff;
-  background: rgba(0, 163, 255, 0.08);
-}
-
-.overlay-stat-badge.tie {
-  color: #4a4a4e;
-  background: rgba(100, 100, 104, 0.06);
 }
 
 /* ---- Unit toggle (sidebar) ---- */

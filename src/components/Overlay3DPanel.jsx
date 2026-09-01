@@ -449,8 +449,8 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           <button className={`overlay-ctrl-btn ${showLabels ? 'active' : ''}`} onClick={() => setShowLabels(l => !l)} title="Toggle circuit name labels">
             🏷 Labels
           </button>
-          <button className={`overlay-ctrl-btn ${syncMode ? 'active' : ''}`} onClick={() => setSyncMode(s => !s)} title="Sync both car dots to the same progress">
-            🔗 Sync
+          <button className={`overlay-ctrl-btn ${syncMode ? 'active' : ''}`} onClick={() => setSyncMode(s => !s)} title="Sync both car dots to the same lap progress">
+            🔗 Sync Progress
           </button>
           <div className="toolbar-separator" style={{ height: 16, alignSelf: 'center' }} />
           <button
@@ -555,7 +555,7 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           <span className="overlay-footer-note">
             Normalized to same bounding box · Corner markers stylized, not to scale
           </span>
-          {syncMode && <span className="overlay-footer-sync">● Synced playback</span>}
+          {syncMode && <span className="overlay-footer-sync">● Sync active</span>}
         </div>
         <div className="overlay-footer-legend">
           <span className="overlay-legend-item">
