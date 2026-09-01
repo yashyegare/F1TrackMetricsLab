@@ -1944,16 +1944,13 @@ body {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 5px 7px;
+  padding: 8px 12px;
   background: rgba(8, 8, 10, 0.92);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(50, 50, 55, 0.6);
-  border-radius: 8px;
-  position: absolute;
-  top: 12px;
-  left: 12px;
+  border-bottom: 1px solid rgba(50, 50, 55, 0.4);
+  position: relative;
   z-index: 5;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  flex-wrap: wrap;
 }
 
 .overlay-ctrl-btn {
@@ -2031,10 +2028,11 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   background: rgba(12, 12, 14, 0.7);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid #1a1a1e;
+  flex-wrap: wrap;
 }
 
 .overlay-wx-chip {
