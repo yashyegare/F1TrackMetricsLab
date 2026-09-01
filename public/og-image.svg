@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d0d0f"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="speedGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2196f3"/>
+      <stop offset="50%" stop-color="#fdd835"/>
+      <stop offset="100%" stop-color="#e10600"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.06" stroke="#ffffff" stroke-width="0.5">
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="0" y1="500" x2="1200" y2="500"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+  </g>
+
+  <!-- Left: stylized track outline (Monza-inspired) -->
+  <g transform="translate(80, 120) scale(1.8)" opacity="0.15" stroke="#e10600" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 180 C30 100, 80 40, 160 50 C200 55, 210 90, 200 130 C190 160, 160 180, 120 170 C80 160, 70 140, 50 180Z"/>
+  </g>
+
+  <!-- Right: stylized track outline (Spa-inspired) -->
+  <g transform="translate(680, 100) scale(1.6)" opacity="0.12" stroke="#2196f3" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M30 120 C50 60, 120 40, 180 80 C220 100, 240 160, 200 200 C160 230, 100 220, 60 180 C40 160, 20 150, 30 120Z"/>
+  </g>
+
+  <!-- Speed trace line (bottom third) -->
+  <g transform="translate(0, 480)">
+    <polyline points="40,80 120,75 200,60 300,20 400,30 500,70 550,80 600,50 700,15 800,25 900,65 1000,70 1100,75 1160,80"
+      fill="none" stroke="url(#speedGrad)" stroke-width="2.5" opacity="0.5"/>
+  </g>
+
+  <!-- Animated racing dots on the track outlines -->
+  <circle cx="280" cy="240" r="4" fill="#ffcc00" filter="url(#glow)">
+    <animate attributeName="cx" values="280;310;280" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="240;230;240" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="860" cy="220" r="4" fill="#ffcc00" filter="url(#glow)">
+    <animate attributeName="cx" values="860;890;860" dur="3.5s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="220;210;220" dur="3.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- F1 red accent bar -->
+  <rect x="60" y="280" width="6" height="80" rx="3" fill="#e10600" opacity="0.8"/>
+
+  <!-- Title -->
+  <text x="80" y="310" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" fill="#ffffff" letter-spacing="-1">
+    F1 Track Metrics Lab
+  </text>
+
+  <!-- Subtitle -->
+  <text x="80" y="355" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="22" font-weight="400" fill="#9ca3af">
+    Real telemetry · 3D visualization · Head-to-head comparison
+  </text>
+
+  <!-- Feature chips -->
+  <g transform="translate(80, 385)">
+    <rect x="0" y="0" width="130" height="32" rx="16" fill="#1e1e28" stroke="#2c2c35"/>
+    <text x="65" y="21" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#e10600" text-anchor="middle">🏎️ 3D Tracks</text>
+
+    <rect x="145" y="0" width="145" height="32" rx="16" fill="#1e1e28" stroke="#2c2c35"/>
+    <text x="217" y="21" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#e10600" text-anchor="middle">📊 Race Pace</text>
+
+    <rect x="305" y="0" width="150" height="32" rx="16" fill="#1e1e28" stroke="#2c2c35"/>
+    <text x="380" y="21" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#e10600" text-anchor="middle">👥 Driver VS</text>
+
+    <rect x="470" y="0" width="160" height="32" rx="16" fill="#1e1e28" stroke="#2c2c35"/>
+    <text x="550" y="21" font-family="Inter, system-ui, sans-serif" font-size="12" font-weight="600" fill="#e10600" text-anchor="middle">📈 Telemetry</text>
+  </g>
+
+  <!-- URL -->
+  <text x="60" y="600" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="500" fill="#6b7280">
+    f1-track-metrics-lab.vercel.app
+  </text>
+</svg>

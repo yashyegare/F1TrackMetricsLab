@@ -8,13 +8,30 @@
 
 **Live Demo →** [f1-track-metrics-lab.vercel.app](https://f1-track-metrics-lab.vercel.app)
 
+<p align="center">
+  <img src="public/og-image.svg" alt="F1 Track Metrics Lab" width="100%" style="max-width: 800px; border-radius: 12px; margin: 24px 0;" />
+</p>
+
+---
+
+## 📸 Screenshots
+
+> **Tip:** Run the app locally and capture these views for the freshest visuals.
+
+| View | Description |
+|------|-------------|
+| 🗺️ **Map View** | Track drawn on Leaflet with animated lap marker, circuit info panel, and DRS zone indicators |
+| 📊 **2D Compare** | Two circuits side-by-side as scaled SVG outlines with full stat comparison |
+| 🎮 **3D Side-by-Side** | Interactive WebGL scenes with road ribbon, corner markers, elevation banking, and synced cameras |
+| 🔮 **3D Overlay** | Both tracks superimposed in one scene, normalized to the same scale for shape comparison |
+| ⚡ **Race Pace** | Speed-colored ribbon (blue→red heatmap), variable-speed car dot, driver head-to-head picker |
+| 📈 **Telemetry Scrubber** | 4-lane synchronized trace stack: speed, time delta, throttle/brake, gear/DRS — MoTeC style |
+
 ---
 
 ## ✨ What It Does
 
 Explore every F1 circuit through three interconnected views — 2D map, flat comparison, and immersive 3D — then overlay **real qualifying telemetry** from OpenF1 to see exactly where drivers gain or lose time.
-
-![Feature Showcase](https://img.shields.io/badge/Hover%20for%20details-royalblue?style=for-the-badge)
 
 | View | What You See |
 |------|-------------|
@@ -68,7 +85,6 @@ Pull live data from [OpenF1](https://openf1.org) (2023+ circuits only):
 
 ### 🎨 Visual Polish
 
-- 💡 **Bloom-ready** — Post-processing pipeline (needs R3F version bump)
 - 🏷️ **Billboard labels** — Start/finish and corner count rendered in WebGL (no DOM layout shifts)
 - 🎬 **Cinematic camera** — 800ms ease-out transitions between circuits
 - ♿ **Accessibility** — `prefers-reduced-motion`, `focus-visible` outlines, ARIA labels
@@ -151,6 +167,7 @@ src/
 │   ├── Track3D.jsx             # Single circuit 3D scene
 │   ├── TelemetryScrubber.jsx   # 4-lane telemetry trace stack
 │   ├── SpeedRibbon.jsx         # Vertex-colored tube mesh
+│   ├── LandingHero.jsx         # Landing page with feature showcase
 │   └── LapAnimation.jsx        # Animated marker on 2D polyline
 └── utils/
     ├── geometry.js             # Lat/lon projection, path interpolation
