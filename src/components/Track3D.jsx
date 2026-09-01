@@ -182,12 +182,22 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
       // Variable-speed mode: advance by real elapsed time × speed multiplier
       elapsedRef.current += dt * speed * 1000; // ms
       const scaledMs = elapsedRef.current % (lapDuration * 1000);
-      let lo = 0, hi = timelineMs.length - 1;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (timelineMs[mid] < scaledMs) lo = mid + 1; else hi = mid;
+      // Binary search for the bracketing samples
+      let hi = 0;
+      const len = timelineMs.length;
+      while (hi < len && timelineMs[hi] < scaledMs) hi++;
+      // Interpolate between the two bracketing samples for smooth motion
+      if (hi <= 0) {
+        progressRef.current = progressValues[0];
+      } else if (hi >= len) {
+        progressRef.current = progressValues[len - 1];
+      } else {
+        const t0 = timelineMs[hi - 1];
+        const t1 = timelineMs[hi];
+        const seg = t1 - t0 || 1;
+        const t = (scaledMs - t0) / seg; // 0..1 interpolation factor
+        progressRef.current = progressValues[hi - 1] + (progressValues[hi] - progressValues[hi - 1]) * t;
       }
-      progressRef.current = progressValues[Math.min(lo, progressValues.length - 1)];
     } else {
       // Constant speed mode
       progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
