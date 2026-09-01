@@ -131,8 +131,7 @@ function TrackCard({ circuit, color, unit }) {
     <div className="compare-card">
       <svg
         viewBox={`0 0 ${CARD_SIZE} ${CARD_SIZE}`}
-        width={CARD_SIZE}
-        height={CARD_SIZE}
+        width="100%"
         className="compare-svg"
       >
         {drsPaths ? (
@@ -142,13 +141,22 @@ function TrackCard({ circuit, color, unit }) {
               d={seg.d}
               fill="none"
               stroke={seg.drs ? '#00ff88' : color}
-              strokeWidth={seg.drs ? 4 : 3}
+              strokeWidth={seg.drs ? 4 : 3.5}
               strokeLinejoin="round"
-              opacity={seg.drs ? 0.9 : 0.4}
+              strokeLinecap="round"
+              opacity={seg.drs ? 0.95 : 0.7}
             />
           ))
         ) : (
-          <path d={d} fill="none" stroke={color} strokeWidth={3} strokeLinejoin="round" />
+          <path
+            d={d}
+            fill="none"
+            stroke={color}
+            strokeWidth={3.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            opacity={0.8}
+          />
         )}
       </svg>
       <div className="compare-card-body">
@@ -199,6 +207,9 @@ export default function ComparePanel({ primary, secondary, unit = 'metric' }) {
     <div className="compare-wrapper">
       <div className="compare-panel">
         <TrackCard circuit={primary} color="#e10600" unit={unit} />
+        <div className="compare-vs">
+          <div className="compare-vs-badge">VS</div>
+        </div>
         <TrackCard circuit={secondary} color="#00a3ff" unit={unit} />
       </div>
       {lengthDiff != null && (
