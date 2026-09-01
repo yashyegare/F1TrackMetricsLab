@@ -66,19 +66,18 @@ export default function RaceControlOverlay({ flags, totalLaps, sessionDateStart 
       <div className="race-control-events">
         {flagEvents.map((event, i) => {
           const style = getFlagStyle(event.flag, event.category, event.message) || { bg: '#444', text: '#fff', icon: '🚩', label: event.flag || event.category || 'FLAG' };
-          const lapPct = totalLaps ? ((event.lap_number || 0) / totalLaps) * 100 : 0;
           return (
             <div
               key={i}
               className="race-control-event"
-              style={{ left: `${Math.min(lapPct, 98)}%` }}
               title={`${event.flag} — Lap ${event.lap_number}: ${event.message || ''}`}
             >
               <div className="race-control-marker" style={{ backgroundColor: style.bg, color: style.text }}>
                 {style.icon}
               </div>
               <div className="race-control-tooltip" style={{ borderColor: style.bg }}>
-                <strong style={{ color: style.bg }}>{style.label} — Lap {event.lap_number}</strong>
+                <strong style={{ color: style.bg }}>{style.label}</strong>
+                <div style={{ fontSize: 10, color: '#9a9aa0', marginTop: 2 }}>Lap {event.lap_number}</div>
                 {event.message && <div className="race-control-msg">{event.message}</div>}
               </div>
             </div>

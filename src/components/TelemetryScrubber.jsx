@@ -71,7 +71,8 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
         className="scrubber-toggle"
         onClick={() => setExpanded(e => !e)}
       >
-        {expanded ? '▾ Hide Telemetry Traces' : '▸ Show Telemetry Traces'}
+        <span style={{ fontSize: 14 }}>{expanded ? '▾' : '▸'}</span>
+        <span>{expanded ? 'Hide Telemetry Traces' : 'Show Telemetry Traces'}</span>
         <span className="scrubber-toggle-hint">speed · delta · throttle · gears · RPM</span>
       </button>
 
@@ -86,7 +87,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={100}>
+            <ResponsiveContainer width="100%" height={120}>
               <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={() => {}} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
@@ -104,10 +105,11 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               <div className="scrubber-lane-header">
                 <span className="scrubber-lane-title">Time Delta</span>
                 <span className="scrubber-legend">
-                  ▲ {nameA} ahead · ▼ {nameB} ahead
+                  <span style={{ color: '#00cc44' }}>▲ {nameA} ahead</span>
+                  <span style={{ color: '#e10600' }}>▼ {nameB} ahead</span>
                 </span>
               </div>
-              <ResponsiveContainer width="100%" height={80}>
+              <ResponsiveContainer width="100%" height={90}>
                 <AreaChart data={deltaTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                   <XAxis dataKey="distance" tick={tickStyle} interval={99} />
@@ -138,11 +140,11 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               <span className="scrubber-legend">
                 <span style={{ color: CAR_A_COLOR }}>● {nameA}</span>
                 <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
-                <span style={{ color: '#00cc44', marginLeft: 4 }}>▬ throttle</span>
-                <span style={{ color: '#ff3333' }}>▬ brake</span>
+                <span style={{ color: '#00cc44', marginLeft: 4 }}>▪ throttle</span>
+                <span style={{ color: '#ff3333' }}>▪ brake</span>
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={100}>
+            <ResponsiveContainer width="100%" height={110}>
               <AreaChart data={throttleBrakeTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
@@ -163,10 +165,10 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               <span className="scrubber-legend">
                 <span style={{ color: CAR_A_COLOR }}>● {nameA}</span>
                 <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
-                <span style={{ color: '#00ff88', marginLeft: 4 }}>▬ DRS</span>
+                <span style={{ color: '#00ff88', marginLeft: 4 }}>▪ DRS</span>
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={80}>
+            <ResponsiveContainer width="100%" height={90}>
               <LineChart data={gearTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
@@ -189,7 +191,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={80}>
+            <ResponsiveContainer width="100%" height={90}>
               <LineChart data={rpmTrace} onMouseMove={handleScrub} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
