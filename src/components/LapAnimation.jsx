@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CircleMarker } from 'react-leaflet';
 import { buildCumulativeDistances, interpolateAlongPath } from '../utils/geometry';
 
-const BASE_LAP_SECONDS = 18; // stylized duration for one full lap at 1x speed
+const BASE_LAP_SECONDS = 18;
 const SPEEDS = [0.5, 1, 2, 4];
 
 export default function LapAnimation({ positions }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..1
+  const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(1);
 
   const rafRef = useRef(null);
@@ -18,7 +18,6 @@ export default function LapAnimation({ positions }) {
     [positions]
   );
 
-  // Reset playback whenever the track changes.
   useEffect(() => {
     setIsPlaying(false);
     setProgress(0);
@@ -32,7 +31,7 @@ export default function LapAnimation({ positions }) {
 
     const step = (ts) => {
       if (lastTsRef.current == null) lastTsRef.current = ts;
-      const dt = (ts - lastTsRef.current) / 1000; // seconds
+      const dt = (ts - lastTsRef.current) / 1000;
       lastTsRef.current = ts;
 
       setProgress((p) => {
@@ -68,6 +67,8 @@ export default function LapAnimation({ positions }) {
     setProgress(Number(e.target.value) / 1000);
   };
 
+  const pct = Math.round(progress * 100);
+
   return (
     <>
       {position && (
@@ -84,32 +85,46 @@ export default function LapAnimation({ positions }) {
       )}
 
       <div className="lap-controls">
-        <button className="lap-btn" onClick={handleTogglePlay} title={isPlaying ? 'Pause' : 'Play lap'}>
-          {isPlaying ? '⏸' : '▶'}
-        </button>
-        <button className="lap-btn" onClick={handleReset} title="Reset">
-          ⟲
-        </button>
+        <div className="lap-controls-main">
+          <button className="lap-btn play-btn" onClick={handleTogglePlay} title={isPlaying ? 'Pause' : 'Play lap'}>
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          <button className="lap-btn" onClick={handleReset} title="Reset">
+            ⟲
+          </button>
 
-        <input
-          className="lap-scrub"
-          type="range"
-          min={0}
-          max={1000}
-          value={Math.round(progress * 1000)}
-          onChange={handleScrub}
-        />
+          <div className="lap-scrub-wrap">
+            <input
+              className="lap-scrub"
+              type="range"
+              min={0}
+              max={1000}
+              value={Math.round(progress * 1000)}
+              onChange={handleScrub}
+            />
+            <div className="lap-progress-track">
+              <div className="lap-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
 
-        <div className="lap-speeds">
-          {SPEEDS.map((s) => (
-            <button
-              key={s}
-              className={`speed-btn ${s === speed ? 'active' : ''}`}
-              onClick={() => setSpeed(s)}
-            >
-              {s}x
-            </button>
-          ))}
+          <span className="lap-pct">{pct}%</span>
+        </div>
+
+        <div className="lap-controls-bottom">
+          <div className="lap-speeds">
+            {SPEEDS.map((s) => (
+              <button
+                key={s}
+                className={`speed-btn ${s === speed ? 'active' : ''}`}
+                onClick={() => setSpeed(s)}
+              >
+                {s}×
+              </button>
+            ))}
+          </div>
+          <span className="lap-distance">
+            {(total / 1000).toFixed(2)} km
+          </span>
         </div>
       </div>
     </>

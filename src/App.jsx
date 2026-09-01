@@ -55,16 +55,35 @@ function TrackHistory({ history }) {
   const minYear = Math.min(...years);
   const maxYear = Math.max(...years);
   const hostedSet = new Set(years);
+  const totalYears = maxYear - minYear + 1;
   return (
     <div className="track-history">
-      <div className="history-bar">
-        {Array.from({ length: maxYear - minYear + 1 }, (_, i) => {
-          const y = minYear + i;
-          const hosted = hostedSet.has(y);
-          return <div key={y} className={`history-dot${hosted ? ' active' : ''}`} title={y} />;
-        })}
+      <div className="history-timeline">
+        <div className="history-line" />
+        <div className="history-dots">
+          {Array.from({ length: totalYears }, (_, i) => {
+            const y = minYear + i;
+            const hosted = hostedSet.has(y);
+            const isDecade = y % 10 === 0;
+            return (
+              <div key={y} className="history-dot-wrap">
+                <div
+                  className={`history-dot${hosted ? ' active' : ''}${isDecade ? ' decade' : ''}`}
+                  title={`${y}${hosted ? ' — GP hosted' : ''}`}
+                />
+                {isDecade && <span className="history-year-label">{y}</span>}
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <span className="history-range">{minYear}–{maxYear} · {years.length} GPs</span>
+      <div className="history-summary">
+        <span className="history-range">{minYear}–{maxYear}</span>
+        <span className="history-sep">·</span>
+        <span className="history-count">{years.length} GPs</span>
+        <span className="history-sep">·</span>
+        <span className="history-pct">{Math.round((years.length / totalYears) * 100)}% attendance</span>
+      </div>
       {history.layoutChanges && <p className="layout-changes">{history.layoutChanges}</p>}
     </div>
   );
