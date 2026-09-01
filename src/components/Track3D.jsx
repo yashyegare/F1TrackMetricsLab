@@ -212,23 +212,37 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
     [points, elevation, cumulative, total]
   );
 
-  // Interpolated speed for dynamic color (when telemetry is available)
-  const interpolatedSpeed = useMemo(() => {
-    if (!projectedTelemetry || projectedTelemetry.length === 0) return null;
-    return interpolateSample(projectedTelemetry, progressRef.current);
-  }, [projectedTelemetry]);
-  const dotColor = interpolatedSpeed ? speedToColor(interpolatedSpeed.speed) : '#ffcc00';
+  // Dynamic color updated every frame inside useFrame
+  const dotColorRef = useRef('#ffcc00');
+  const sphereRef = useRef();
+  const lightRef = useRef();
+  const ringRef = useRef();
+
+  // Color update moved into useFrame for per-frame speed-based coloring
+  useFrame(() => {
+    if (!groupRef.current) return;
+    if (!projectedTelemetry || projectedTelemetry.length === 0) {
+      dotColorRef.current = '#ffcc00';
+    } else {
+      const sample = interpolateSample(projectedTelemetry, progressRef.current);
+      dotColorRef.current = sample ? speedToColor(sample.speed) : '#ffcc00';
+    }
+    const c = dotColorRef.current;
+    if (sphereRef.current) { sphereRef.current.color.set(c); sphereRef.current.emissive.set(c); }
+    if (lightRef.current) lightRef.current.color.set(c);
+    if (ringRef.current) { ringRef.current.color.set(c); ringRef.current.emissive.set(c); }
+  });
 
   return (
     <group ref={groupRef} position={initPos} visible={speed > 0}>
       <mesh>
         <sphereGeometry args={[sphereR, 20, 20]} />
-        <meshStandardMaterial color={dotColor} emissive={dotColor} emissiveIntensity={2.5} toneMapped={false} />
+        <meshStandardMaterial ref={sphereRef} color="#ffcc00" emissive="#ffcc00" emissiveIntensity={2.5} toneMapped={false} />
       </mesh>
-      <pointLight color={dotColor} intensity={sphereR * 80} distance={sphereR * 30} />
+      <pointLight ref={lightRef} color="#ffcc00" intensity={sphereR * 80} distance={sphereR * 30} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -sphereR * 0.15, 0]}>
         <ringGeometry args={[ringInner, ringOuter, 24]} />
-        <meshStandardMaterial color={dotColor} transparent opacity={0.4} emissive={dotColor} emissiveIntensity={0.5} side={THREE.DoubleSide} />
+        <meshStandardMaterial ref={ringRef} color="#ffcc00" transparent opacity={0.4} emissive="#ffcc00" emissiveIntensity={0.5} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
