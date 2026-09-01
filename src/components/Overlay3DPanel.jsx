@@ -578,15 +578,6 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           📷
         </button>
 
-        {/* Circuit name labels — DOM overlay */}
-        {showLabels && (
-          <div className="overlay-labels">
-            <span className="overlay-label" style={{ color: '#e10600' }}>{primary.name}</span>
-            <span className="overlay-label-sep">vs</span>
-            <span className="overlay-label" style={{ color: '#00a3ff' }}>{secondary.name}</span>
-          </div>
-        )}
-
         <div className="overlay-3d-canvas-wrap" ref={canvasWrapRef}>
           <OverlayScene
             primaryDetail={primaryDetail}
@@ -609,6 +600,15 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
             gapRef={gapRef}
           />
         </div>
+
+        {/* Circuit name labels — lower-third overlay inside canvas container */}
+        {showLabels && (
+          <div className="overlay-labels">
+            <span className="overlay-label" style={{ color: '#e10600' }}>{primary.name}</span>
+            <span className="overlay-label-sep">vs</span>
+            <span className="overlay-label" style={{ color: '#00a3ff' }}>{secondary.name}</span>
+          </div>
+        )}
 
       </div>
 
