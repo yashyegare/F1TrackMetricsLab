@@ -240,17 +240,17 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
     return t >= lapStart && t <= lapEnd;
   });
 
-  const telemetry = location.map(loc => {
-    let closest = null;
-    let minDiff = Infinity;
-    for (const cd of carData) {
-      const diff = Math.abs(new Date(cd.date) - new Date(loc.date));
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = cd;
-      }
+  // Two-pointer join: both arrays are date-sorted, so walk them together O(n+m)
+  const telemetry = [];
+  let carIdx = 0;
+  for (const loc of location) {
+    const locTime = new Date(loc.date).getTime();
+    // Advance carIdx to the nearest car_data point
+    while (carIdx < carData.length - 1 && Math.abs(new Date(carData[carIdx + 1].date).getTime() - locTime) < Math.abs(new Date(carData[carIdx].date).getTime() - locTime)) {
+      carIdx++;
     }
-    return {
+    const closest = carData[carIdx];
+    telemetry.push({
       x: loc.x,
       y: loc.y,
       z: loc.z,
@@ -261,8 +261,8 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
       drs: closest?.drs ?? 0,
       gear: closest?.n_gear ?? 0,
       rpm: closest?.rpm ?? 0,
-    };
-  });
+    });
+  }
 
   const driverInfo = drivers.find(d => d.driver_number === driverNumber);
 

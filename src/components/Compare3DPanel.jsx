@@ -104,7 +104,7 @@ function RaceDataPanel({ primaryTelemetry, secondaryTelemetry, primaryStints, se
   );
 }
 
-function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, loadStep, sharedProgressRef }) {
+function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, loadStep, telemetryError, sharedProgressRef }) {
   return (
     <div className="track3d-card">
       <div className="track3d-canvas-wrap-outer" style={{ borderColor: color }}>
@@ -133,6 +133,12 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
         <div className="telemetry-badge">
           <span className="telemetry-badge-dot" />
           Real telemetry — {telemetry.session.name} {telemetry.session.year}
+        </div>
+      )}
+      {telemetryError && !telemetryLoading && (
+        <div className="telemetry-badge error">
+          <span className="telemetry-badge-dot error" />
+          {telemetryError}
         </div>
       )}
       {telemetryLoading && (
@@ -225,6 +231,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const [secondaryTelemetry, setSecondaryTelemetry] = useState(null);
   const [primaryLoading, setPrimaryLoading] = useState(false);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
+  const [primaryError, setPrimaryError] = useState(null);
+  const [secondaryError, setSecondaryError] = useState(null);
 
   // Driver picker state
   const [primaryDrivers, setPrimaryDrivers] = useState([]);
@@ -303,6 +311,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
       setSecondaryTelemetry(null);
       setPrimaryDrivers([]);
       setSecondaryDrivers([]);
+      setPrimaryError(null);
+      setSecondaryError(null);
       setPrimaryDriver(null);
       setSecondaryDriver(null);
       primaryQualiData.current = null;
@@ -388,6 +398,10 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         }
       } catch (e) {
         console.warn('Telemetry fetch failed for', circuit.id, e);
+        if (!cancelled) {
+          const setError = isPrimary ? setPrimaryError : setSecondaryError;
+          setError(e.message || 'Telemetry unavailable for this session');
+        }
       }
       if (!cancelled) { setLoading(false); setLoadStep(''); }
     }
@@ -665,7 +679,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               sharedCameraRef={sharedCameraRef} instanceId="A"
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={primaryCanvasRef}
-              telemetry={primaryTelemetry} telemetryLoading={primaryLoading} loadStep={primaryLoadStep}
+              telemetry={primaryTelemetry} telemetryLoading={primaryLoading} loadStep={primaryLoadStep} telemetryError={primaryError}
               sharedProgressRef={sharedProgressRef}
             />
             <StatCard
@@ -673,7 +687,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               sharedCameraRef={sharedCameraRef} instanceId="B"
               animSpeed={animSpeed} animPaused={animPaused}
               canvasRef={secondaryCanvasRef}
-              telemetry={secondaryTelemetry} telemetryLoading={secondaryLoading} loadStep={secondaryLoadStep}
+              telemetry={secondaryTelemetry} telemetryLoading={secondaryLoading} loadStep={secondaryLoadStep} telemetryError={secondaryError}
               sharedProgressRef={sharedProgressRef}
             />
           </div>

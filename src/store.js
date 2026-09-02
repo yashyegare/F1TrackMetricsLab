@@ -3,7 +3,7 @@ import { create } from 'zustand';
 function loadState(key, fallback) {
   try { const r = localStorage.getItem(key); return r !== null ? JSON.parse(r) : fallback; } catch { return fallback; }
 }
-function saveState(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+function saveState(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota exceeded or private browsing — ignore */ } }
 
 function readURLParams() {
   const p = new URLSearchParams(window.location.search);
@@ -18,7 +18,7 @@ function readURLParams() {
   };
 }
 
-export const useStore = create((set, get) => {
+export const useStore = create((set, _get) => {
   const url = readURLParams();
 
   return {

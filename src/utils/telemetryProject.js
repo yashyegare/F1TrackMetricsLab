@@ -13,7 +13,7 @@ import { projectToLocalMeters } from './geometry.js';
 
 // ---- Path utilities ----
 
-function pathLength(points) {
+function _pathLength(points) {
   let len = 0;
   for (let i = 1; i < points.length; i++) {
     const dx = points[i][0] - points[i - 1][0];
@@ -123,15 +123,15 @@ function findBestRotation(trackNorm, openf1Norm, trackCum, trackTotal) {
   const mirrored = openf1Norm.map(([x, y]) => [x, -y]);
   const mirrorResult = searchAngle(mirrored, 0, 360, 1);
 
-  let bestPoints, coarseAngle, bestAvgDist;
+  let bestPoints, coarseAngle, _bestAvgDist;
   if (mirrorResult.avgDist < normal.avgDist) {
     bestPoints = mirrored;
     coarseAngle = mirrorResult.angle;
-    bestAvgDist = mirrorResult.avgDist;
+    _bestAvgDist = mirrorResult.avgDist;
   } else {
     bestPoints = openf1Norm;
     coarseAngle = normal.angle;
-    bestAvgDist = normal.avgDist;
+    _bestAvgDist = normal.avgDist;
   }
 
   // Fine search: ±5° around best, step 0.1°

@@ -2076,6 +2076,16 @@ body {
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+.telemetry-badge.error {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.telemetry-badge-dot.error {
+  background: #ff6b6b;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }
   50% { opacity: 1; }
