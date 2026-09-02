@@ -694,7 +694,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           cornerTimesB={cornerTimesB}
           seaLevelMode={seaLevelMode}
           otherAltitude={secondaryAltitude}
-          lengthMeters={primaryDetail.length}
+          lengthMeters={primaryDetail.lengthMeters}
         />
       )}
       {showTrackB && (
@@ -717,7 +717,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           cornerTimesB={cornerTimesB}
           seaLevelMode={seaLevelMode}
           otherAltitude={primaryAltitude}
-          lengthMeters={secondaryDetail.length}
+          lengthMeters={secondaryDetail.lengthMeters}
         />
       )}
 
@@ -736,7 +736,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       />
       <ContactShadows position={[0, -0.015, 0]} opacity={0.4} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />
 
-      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} primaryTelemetry={primaryTelemetry} lengthMeters={primaryDetail.length} />
+      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} primaryTelemetry={primaryTelemetry} lengthMeters={primaryDetail.lengthMeters} />
 
       <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
 
