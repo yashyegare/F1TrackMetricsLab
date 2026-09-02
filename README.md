@@ -16,16 +16,17 @@
 
 ## 📸 Screenshots
 
-> **Tip:** Run the app locally and capture these views for the freshest visuals.
+> **Capture locally:** Run `npm run dev`, open http://localhost:5174, and take screenshots of each view.
+> Recommended: use browser dev tools to set viewport to 1280×800 for consistent sizing.
 
-| View | Description |
-|------|-------------|
-| 🗺️ **Map View** | Track drawn on Leaflet with animated lap marker, circuit info panel, and DRS zone indicators |
-| 📊 **2D Compare** | Two circuits side-by-side as scaled SVG outlines with full stat comparison |
-| 🎮 **3D Side-by-Side** | Interactive WebGL scenes with road ribbon, corner markers, elevation banking, and synced cameras |
-| 🔮 **3D Overlay** | Both tracks superimposed in one scene, normalized to the same scale for shape comparison |
-| ⚡ **Race Pace** | Speed-colored ribbon (blue→red heatmap), variable-speed car dot, driver head-to-head picker |
-| 📈 **Telemetry Scrubber** | 4-lane synchronized trace stack: speed, time delta, throttle/brake, gear/DRS — MoTeC style |
+| View | What to capture |
+|------|-----------------|
+| 🗺️ **Map View** | Select any circuit → click Map. Shows the track drawn on Leaflet with animated lap marker, circuit info panel, and DRS zone indicators |
+| 📊 **2D Compare** | Select two circuits → click Compare. Side-by-side SVG outlines with full stat comparison |
+| 🎮 **3D Side-by-Side** | Select two circuits → click 3D View. Interactive WebGL scenes with road ribbon, corner markers, elevation banking, and synced cameras |
+| 🔮 **3D Overlay** | In 3D View, click the Overlay tab. Both tracks superimposed in one scene, normalized to the same scale for shape comparison |
+| ⚡ **Race Pace** | Toggle the Race Pace button → select drivers. Speed-colored ribbon (blue→red heatmap), variable-speed car dots, driver head-to-head |
+| 📈 **Telemetry Scrubber** | With Race Pace on, expand the Race Data panel. 4-lane synchronized trace stack: speed, time delta, throttle/brake, gear/DRS — MoTeC style |
 
 ---
 

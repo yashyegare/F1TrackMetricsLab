@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint src/ --max-warnings=50"
+    "lint": "eslint src/ --max-warnings=50",
+    "test:e2e": "npx playwright test"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -24,9 +25,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@vitejs/plugin-react": "^4.3.1",
     "eslint": "^10.9.1",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^29.1.1",
     "vite": "^5.4.0",
     "vitest": "^2.1.9"
   }
