@@ -80,7 +80,7 @@ const TRAIL_LENGTH = 12;
 
 // --- Animated car dot for overlay with ghost trail ---
 
-function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary, trailRef }) {
+function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary, trailRef, lengthMeters }) {
   const groupRef = useRef();
   const localProgress = useRef(Math.random());
   const progressRef = useRef(Math.random());
@@ -108,7 +108,7 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
 
       const currentSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
       if (currentSpeed != null && currentSpeed > 0) {
-        const trackLengthKm = total * 0.001;
+        const trackLengthKm = (lengthMeters ?? 5000) / 1000;
         const progressPerSecond = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         progressRef.current = (progressRef.current + elapsed * progressPerSecond * speed) % 1;
       } else {
@@ -389,7 +389,7 @@ function computeOverlayElevation(originalPoints, corners, altitudeMeters, normal
   return raw;
 }
 
-function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary, cornerTimesA, cornerTimesB, seaLevelMode, otherAltitude }) {
+function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId, animSpeed, animPaused, drsZones = 0, showLabel, sharedProgressRef, telemetry, gapRef, isPrimary, cornerTimesA, cornerTimesB, seaLevelMode, otherAltitude, lengthMeters }) {
   const normalizedPoints = useMemo(() => normalizePoints(detail.points), [detail.points]);
   const elevation = useMemo(
     () => computeOverlayElevation(detail.points, detail.corners, altitude, normalizedPoints),
@@ -541,6 +541,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
         gapRef={gapRef}
         isPrimary={isPrimary}
         trailRef={trailRef}
+        lengthMeters={lengthMeters}
       />
     </group>
   );
@@ -645,14 +646,6 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
     };
   }, []);
 
-  // Compute primary track total distance for sync speed
-  const primaryTotal = useMemo(() => {
-    const pts = normalizePoints(primaryDetail.points);
-    const elev = computeOverlayElevation(primaryDetail.points, primaryDetail.corners, primaryAltitude, pts);
-    const { total } = buildCumulativeDist3D(pts, elev);
-    return total;
-  }, [primaryDetail, primaryAltitude]);
-
   return (
     <Canvas
       dpr={[1, 2]}
@@ -701,6 +694,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           cornerTimesB={cornerTimesB}
           seaLevelMode={seaLevelMode}
           otherAltitude={secondaryAltitude}
+          lengthMeters={primaryDetail.length}
         />
       )}
       {showTrackB && (
@@ -723,6 +717,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
           cornerTimesB={cornerTimesB}
           seaLevelMode={seaLevelMode}
           otherAltitude={primaryAltitude}
+          lengthMeters={secondaryDetail.length}
         />
       )}
 
@@ -741,7 +736,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       />
       <ContactShadows position={[0, -0.015, 0]} opacity={0.4} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />
 
-      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} primaryTelemetry={primaryTelemetry} primaryTotal={primaryTotal} />
+      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} primaryTelemetry={primaryTelemetry} lengthMeters={primaryDetail.length} />
 
       <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
 
@@ -759,7 +754,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
 // --- Sync progress driver (inside Canvas) ---
 
-function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode, primaryTelemetry, primaryTotal }) {
+function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode, primaryTelemetry, lengthMeters }) {
   const lastTime = useRef(null);
   useFrame((_, delta) => {
     if (syncMode && animSpeed > 0 && !animPaused) {
@@ -773,7 +768,7 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
       if (primaryTelemetry && primaryTelemetry.length > 0) {
         const currentSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
         if (currentSpeed != null && currentSpeed > 0) {
-          const trackLengthKm = (primaryTotal || 5000) * 0.001;
+          const trackLengthKm = (lengthMeters ?? 5000) / 1000;
           progressDelta = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         }
       }
