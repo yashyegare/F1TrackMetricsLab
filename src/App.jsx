@@ -7,6 +7,7 @@ import CommandPalette from './components/CommandPalette.jsx';
 import LandingHero from './components/LandingHero.jsx';
 import { useStore } from './store';
 import { getTrackDetail } from './utils/track3d';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'));
 
@@ -200,7 +201,6 @@ function FlyToCircuit({ circuit }) {
 
 export default function App() {
   const searchRef = useRef(null);
-
   // Zustand store selectors — only re-render when the selected slice changes
   const mode = useStore(s => s.mode);
   const selectedId = useStore(s => s.selectedId);
@@ -227,8 +227,8 @@ export default function App() {
   const selectCircuit = useStore(s => s.selectCircuit);
 
   // Derived state
-  const selected = useMemo(() => circuits.find(c => c.id === selectedId) || circuits[0], [selectedId]);
-  const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId) || circuits[1], [compareId]);
+  const selected = useMemo(() => circuits.find(c => c.id === selectedId) || circuits[0] || null, [selectedId]);
+  const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId) || circuits[1] || null, [compareId]);
   const positions = useMemo(() => (selected ? selected.coordinates.map(([lon, lat]) => [lat, lon]) : []), [selected]);
 
   const initialTelemetry = useMemo(() => {
@@ -392,7 +392,7 @@ export default function App() {
       <main className="map-area">
         {!mode ? (
           <LandingHero />
-        ) : mode === 'map' ? (
+        ) : mode === 'map' && selected ? (
           <>
             <MapContainer center={[selected.lat, selected.lon]} zoom={selected.zoom} scrollWheelZoom className="map">
               <TileLayer
@@ -418,9 +418,11 @@ export default function App() {
         ) : mode === 'compare' ? (
           <ComparePanel primary={selected} secondary={compareCircuit} unit={unit} />
         ) : (
-          <Suspense fallback={<div className="loading-3d">Loading 3D view…</div>}>
-            <Compare3DPanel primary={selected} secondary={compareCircuit} unit={unit} initialTelemetry={initialTelemetry} />
-          </Suspense>
+          <ErrorBoundary fallback={<ComparePanel primary={selected} secondary={compareCircuit} unit={unit} />}>
+            <Suspense fallback={<div className="loading-3d">Loading 3D view…</div>}>
+              <Compare3DPanel primary={selected} secondary={compareCircuit} unit={unit} initialTelemetry={initialTelemetry} />
+            </Suspense>
+          </ErrorBoundary>
         )}
         <div className="disclaimer">
           Unofficial. Not associated with the Formula 1 companies. Track data from{' '}
