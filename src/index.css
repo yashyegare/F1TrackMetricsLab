@@ -2061,10 +2061,7 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 10px 16px;
-  margin-top: 6px;
-  background: rgba(14, 14, 16, 0.95);
-  border-radius: 6px;
-  border: 1px solid rgba(44, 44, 49, 0.25);
+  background: transparent;
 }
 
 .overlay-layout-badge {
@@ -2102,17 +2099,44 @@ body {
   font-weight: 500;
 }
 
+/* ---- Overlay section panels (Head-to-Head, Track History) ---- */
+
+.overlay-section-panel {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 10px;
+  background: rgba(10, 10, 12, 0.95);
+  border: 1px solid rgba(44, 44, 49, 0.25);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.overlay-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6a6a70;
+  background: rgba(255, 255, 255, 0.015);
+  border-bottom: 1px solid rgba(44, 44, 49, 0.15);
+}
+
+.overlay-section-icon {
+  font-size: 12px;
+}
+
 /* ---- Overlay stat comparison card ---- */
 
 .overlay-stat-card {
-  background: linear-gradient(180deg, rgba(14, 14, 16, 0.97) 0%, rgba(10, 10, 12, 0.99) 100%);
-  border-top: 1px solid rgba(44, 44, 49, 0.3);
-  border-radius: 0 0 8px 8px;
-  padding: 14px 18px;
+  background: transparent;
+  padding: 10px 16px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  margin-top: 8px;
 }
 
 .overlay-stat-diff {

@@ -950,8 +950,13 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
 
       </div>
 
-      {/* Stat comparison card */}
-      <div className="overlay-stat-card">
+      {/* Track stats section — same width as canvas */}
+      <div className="overlay-section-panel">
+        <div className="overlay-section-title">
+          <span className="overlay-section-icon">📊</span>
+          Head-to-Head
+        </div>
+        <div className="overlay-stat-card">
         <div className="overlay-stat-diff">
           <span className="overlay-stat-label">Length</span>
           <span className="overlay-stat-val" style={{ color: '#e10600' }}>{(primary.length / 1000).toFixed(3)} km</span>
@@ -1003,24 +1008,37 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
           <span className="overlay-stat-vs">vs</span>
           <span className="overlay-stat-val" style={{ color: '#00a3ff' }}>{secondaryDetail.direction}</span>
         </div>
+        </div>
       </div>
 
       {/* Layout history badges */}
-      {((primary.trackHistory?.layoutChanges && primary.trackHistory.layoutChanges !== 'Original layout unchanged since opening') ||
-        (secondary.trackHistory?.layoutChanges && secondary.trackHistory.layoutChanges !== 'Original layout unchanged since opening')) && (
-        <div className="overlay-layout-history">
-          {primary.trackHistory?.layoutChanges && (
-            <span className="overlay-layout-badge" style={{ borderColor: '#e10600' }}>
-              <span style={{ color: '#e10600', fontWeight: 700 }}>{primary.name.split(' ')[0]}</span> {primary.trackHistory.layoutChanges}
-            </span>
-          )}
-          {secondary.trackHistory?.layoutChanges && (
-            <span className="overlay-layout-badge" style={{ borderColor: '#00a3ff' }}>
-              <span style={{ color: '#00a3ff', fontWeight: 700 }}>{secondary.name.split(' ')[0]}</span> {secondary.trackHistory.layoutChanges}
-            </span>
-          )}
-        </div>
-      )}
+      {(() => {
+        const hasHistory = (
+          (primary.trackHistory?.layoutChanges && primary.trackHistory.layoutChanges !== 'Original layout unchanged since opening') ||
+          (secondary.trackHistory?.layoutChanges && secondary.trackHistory.layoutChanges !== 'Original layout unchanged since opening')
+        );
+        if (!hasHistory) return null;
+        return (
+          <div className="overlay-section-panel">
+            <div className="overlay-section-title">
+              <span className="overlay-section-icon">🏛️</span>
+              Track History
+            </div>
+            <div className="overlay-layout-history">
+              {primary.trackHistory?.layoutChanges && primary.trackHistory.layoutChanges !== 'Original layout unchanged since opening' && (
+                <span className="overlay-layout-badge" style={{ borderColor: '#e10600' }}>
+                  <span style={{ color: '#e10600', fontWeight: 700 }}>{primary.name.split(' ')[0]}</span> {primary.trackHistory.layoutChanges}
+                </span>
+              )}
+              {secondary.trackHistory?.layoutChanges && secondary.trackHistory.layoutChanges !== 'Original layout unchanged since opening' && (
+                <span className="overlay-layout-badge" style={{ borderColor: '#00a3ff' }}>
+                  <span style={{ color: '#00a3ff', fontWeight: 700 }}>{secondary.name.split(' ')[0]}</span> {secondary.trackHistory.layoutChanges}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="overlay-footer">
         <div className="overlay-footer-info">
