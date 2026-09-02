@@ -645,6 +645,14 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
     };
   }, []);
 
+  // Compute primary track total distance for sync speed
+  const primaryTotal = useMemo(() => {
+    const pts = normalizePoints(primaryDetail.points);
+    const elev = computeOverlayElevation(primaryDetail.points, primaryDetail.corners, primaryAltitude, pts);
+    const { total } = buildCumulativeDist3D(pts, elev);
+    return total;
+  }, [primaryDetail, primaryAltitude]);
+
   return (
     <Canvas
       dpr={[1, 2]}
@@ -733,7 +741,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       />
       <ContactShadows position={[0, -0.015, 0]} opacity={0.4} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />
 
-      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} />
+      <SyncProgressDriver sharedProgressRef={sharedProgressRef} animSpeed={animSpeed} animPaused={animPaused} syncMode={syncMode} primaryTelemetry={primaryTelemetry} primaryTotal={primaryTotal} />
 
       <GapReadout gapRef={gapRef} animSpeed={animSpeed} animPaused={animPaused} />
 
@@ -751,10 +759,31 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
 // --- Sync progress driver (inside Canvas) ---
 
-function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode }) {
+function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode, primaryTelemetry, primaryTotal }) {
+  const lastTime = useRef(null);
   useFrame((_, delta) => {
     if (syncMode && animSpeed > 0 && !animPaused) {
-      sharedProgressRef.current = (sharedProgressRef.current + delta * 0.3 * animSpeed) % 1;
+      const now = performance.now();
+      if (lastTime.current === null) lastTime.current = now;
+      const elapsed = (now - lastTime.current) / 1000;
+      lastTime.current = now;
+
+      // Use real telemetry speed if available, otherwise use a moderate default
+      let progressDelta = 0;
+      if (primaryTelemetry && primaryTelemetry.length > 0) {
+        const currentSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
+        if (currentSpeed != null && currentSpeed > 0) {
+          const trackLengthKm = (primaryTotal || 5000) * 0.001;
+          progressDelta = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
+        }
+      }
+      if (progressDelta <= 0) {
+        // Fallback: moderate constant speed (about 60s for a full lap)
+        progressDelta = 0.0167;
+      }
+      sharedProgressRef.current = (sharedProgressRef.current + elapsed * progressDelta * animSpeed) % 1;
+    } else {
+      lastTime.current = null;
     }
   });
   return null;
