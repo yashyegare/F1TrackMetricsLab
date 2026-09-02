@@ -562,10 +562,26 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
 export default function Track3D({
   detail, accentColor = '#e10600', height = 420, altitude, circuitId, drsZones = 0,
   sharedCameraRef, instanceId, animSpeed = 0, animPaused = false,
-  canvasRef: externalCanvasRef, telemetry = null, sharedProgressRef = null,
+  canvasRef: externalCanvasRef, telemetry = null, sharedProgressRef = null, onContextLost,
 }) {
   const { points } = detail;
   const internalCanvasRef = useRef();
+
+  // Listen for WebGL context loss and notify parent ErrorBoundary
+  useEffect(() => {
+    const el = externalCanvasRef?.current;
+    if (!el || !onContextLost) return;
+    // Wait a tick for the R3F Canvas to mount its <canvas> element
+    const timer = setTimeout(() => {
+      const canvas = el.querySelector('canvas');
+      if (!canvas) return;
+      const handler = () => onContextLost();
+      canvas.addEventListener('webglcontextlost', handler, { once: true });
+      // Cleanup: remove listener if component unmounts before context loss
+      return () => canvas.removeEventListener('webglcontextlost', handler);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [externalCanvasRef, onContextLost]);
 
   const camera = useMemo(() => {
     const xs = points.map((p) => p[0]);
