@@ -929,7 +929,13 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
       {/* Track stats section — same width as canvas */}
       <div className="overlay-section-panel">
         <div className="overlay-section-title">
-          <span className="overlay-section-icon">📊</span>
+          <span className="overlay-section-icon h2h">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+          </span>
           Head-to-Head
         </div>
         <div className="overlay-stat-card">
@@ -997,7 +1003,12 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
         return (
           <div className="overlay-section-panel">
             <div className="overlay-section-title">
-              <span className="overlay-section-icon">🏛️</span>
+              <span className="overlay-section-icon history">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </span>
               Track History
             </div>
             <div className="overlay-layout-history">
