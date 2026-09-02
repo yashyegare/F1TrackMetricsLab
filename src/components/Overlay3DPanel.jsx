@@ -70,9 +70,17 @@ function interpolateTelemetrySpeed(telemetry, progress) {
   if (i >= telemetry.length) return telemetry[telemetry.length - 1].speed;
   const prev = telemetry[i - 1];
   const curr = telemetry[i];
-  const segLen = curr.progress - prev.progress || 1;
-  const t = (p - prev.progress) / segLen;
+  const segLen = Math.abs(curr.progress - prev.progress) || 0.001; // abs to handle non-monotonic projection dips
+  const t = Math.max(0, Math.min(1, (p - prev.progress) / segLen)); // clamp t to [0,1] for safety
   return prev.speed + (curr.speed - prev.speed) * t;
+}
+
+/** Sort a projected telemetry array by progress once, memoized. */
+function useSortedTelemetry(telemetry) {
+  return useMemo(() => {
+    if (!telemetry || telemetry.length === 0) return [];
+    return [...telemetry].sort((a, b) => a.progress - b.progress);
+  }, [telemetry]);
 }
 
 // --- Ghost trail positions store ---
@@ -85,6 +93,7 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
   const progressRef = useRef(0);
   const lastTime = useRef(null);
   const trailPositions = useRef([]);
+  const sortedTelemetry = useSortedTelemetry(telemetry);
 
   const sphereR = size;
 
@@ -101,13 +110,13 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
     if (sharedProgressRef) {
       progressRef.current = sharedProgressRef.current;
       lastTime.current = null; // sync mode drives progress, don't track locally
-    } else if (telemetry && telemetry.length > 0) {
+    } else if (sortedTelemetry.length > 0) {
       const now = performance.now();
       if (lastTime.current === null) { lastTime.current = now; return; } // skip first frame to get a valid dt
       const elapsed = Math.min((now - lastTime.current) / 1000, 0.1); // clamp to prevent jumps from background tabs
       lastTime.current = now;
 
-      const rawSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
+      const rawSpeed = interpolateTelemetrySpeed(sortedTelemetry, progressRef.current);
       const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 60) : null;
       if (currentSpeed != null) {
         const trackLengthKm = (lengthMeters ?? 5000) / 1000;
@@ -682,6 +691,7 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
 
 function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode, primaryTelemetry, lengthMeters }) {
   const lastTime = useRef(null);
+  const sortedTelemetry = useSortedTelemetry(primaryTelemetry);
   useFrame((_, delta) => {
     if (syncMode && animSpeed > 0 && !animPaused) {
       const now = performance.now();
@@ -691,8 +701,8 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
 
       // Use real telemetry speed if available, otherwise use a moderate default
       let progressDelta = 0;
-      if (primaryTelemetry && primaryTelemetry.length > 0) {
-        const rawSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
+      if (sortedTelemetry.length > 0) {
+        const rawSpeed = interpolateTelemetrySpeed(sortedTelemetry, sharedProgressRef.current);
         const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 60) : null;
         if (currentSpeed != null) {
           const trackLengthKm = (lengthMeters ?? 5000) / 1000;
