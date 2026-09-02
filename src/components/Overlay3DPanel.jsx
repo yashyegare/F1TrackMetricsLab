@@ -82,8 +82,7 @@ const TRAIL_LENGTH = 12;
 
 function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, size = 0.02, color = '#ffcc00', sharedProgressRef, telemetry, gapRef, isPrimary, trailRef, lengthMeters }) {
   const groupRef = useRef();
-  const localProgress = useRef(Math.random());
-  const progressRef = useRef(Math.random());
+  const progressRef = useRef(0);
   const lastTime = useRef(null);
   const trailPositions = useRef([]);
 
@@ -93,6 +92,7 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
     if (!groupRef.current) return;
     if (paused || speed <= 0) {
       groupRef.current.visible = false;
+      lastTime.current = null; // reset so first frame after unpause doesn't jump
       return;
     }
     groupRef.current.visible = true;
@@ -100,14 +100,15 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
 
     if (sharedProgressRef) {
       progressRef.current = sharedProgressRef.current;
+      lastTime.current = null; // sync mode drives progress, don't track locally
     } else if (telemetry && telemetry.length > 0) {
       const now = performance.now();
-      if (lastTime.current === null) lastTime.current = now;
-      const elapsed = (now - lastTime.current) / 1000;
+      if (lastTime.current === null) { lastTime.current = now; return; } // skip first frame to get a valid dt
+      const elapsed = Math.min((now - lastTime.current) / 1000, 0.1); // clamp to prevent jumps from background tabs
       lastTime.current = now;
 
       const rawSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
-      const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 40) : null; // floor at 40 km/h to prevent stalls from GPS gaps
+      const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 60) : null;
       if (currentSpeed != null) {
         const trackLengthKm = (lengthMeters ?? 5000) / 1000;
         const progressPerSecond = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
@@ -124,8 +125,11 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
         gapRef.current.secondaryTime = performance.now();
       }
     } else {
-      localProgress.current = (localProgress.current + dt * speed * 0.08) % 1;
-      progressRef.current = localProgress.current;
+      // No telemetry: constant speed
+      if (lastTime.current === null) { lastTime.current = performance.now(); return; }
+      const elapsed = Math.min((performance.now() - lastTime.current) / 1000, 0.1);
+      lastTime.current = performance.now();
+      progressRef.current = (progressRef.current + elapsed * speed * 0.08) % 1;
 
       if (gapRef && isPrimary) {
         gapRef.current.primaryProgress = progressRef.current;
@@ -681,22 +685,21 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
   useFrame((_, delta) => {
     if (syncMode && animSpeed > 0 && !animPaused) {
       const now = performance.now();
-      if (lastTime.current === null) lastTime.current = now;
-      const elapsed = (now - lastTime.current) / 1000;
+      if (lastTime.current === null) { lastTime.current = now; return; } // skip first frame
+      const elapsed = Math.min((now - lastTime.current) / 1000, 0.1); // clamp to prevent jumps from background tabs
       lastTime.current = now;
 
       // Use real telemetry speed if available, otherwise use a moderate default
       let progressDelta = 0;
       if (primaryTelemetry && primaryTelemetry.length > 0) {
         const rawSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
-        const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 40) : null; // floor at 40 km/h to prevent stalls from GPS gaps
+        const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 60) : null;
         if (currentSpeed != null) {
           const trackLengthKm = (lengthMeters ?? 5000) / 1000;
           progressDelta = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         }
       }
       if (progressDelta <= 0) {
-        // Fallback: moderate constant speed (about 60s for a full lap)
         progressDelta = 0.0167;
       }
       sharedProgressRef.current = (sharedProgressRef.current + elapsed * progressDelta * animSpeed) % 1;
