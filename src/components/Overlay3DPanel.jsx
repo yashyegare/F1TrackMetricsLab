@@ -106,8 +106,9 @@ function OverlayCarDot({ points, elevation, cumulative, total, speed, paused, si
       const elapsed = (now - lastTime.current) / 1000;
       lastTime.current = now;
 
-      const currentSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
-      if (currentSpeed != null && currentSpeed > 0) {
+      const rawSpeed = interpolateTelemetrySpeed(telemetry, progressRef.current);
+      const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 40) : null; // floor at 40 km/h to prevent stalls from GPS gaps
+      if (currentSpeed != null) {
         const trackLengthKm = (lengthMeters ?? 5000) / 1000;
         const progressPerSecond = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         progressRef.current = (progressRef.current + elapsed * progressPerSecond * speed) % 1;
@@ -687,8 +688,9 @@ function SyncProgressDriver({ sharedProgressRef, animSpeed, animPaused, syncMode
       // Use real telemetry speed if available, otherwise use a moderate default
       let progressDelta = 0;
       if (primaryTelemetry && primaryTelemetry.length > 0) {
-        const currentSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
-        if (currentSpeed != null && currentSpeed > 0) {
+        const rawSpeed = interpolateTelemetrySpeed(primaryTelemetry, sharedProgressRef.current);
+        const currentSpeed = rawSpeed != null ? Math.max(rawSpeed, 40) : null; // floor at 40 km/h to prevent stalls from GPS gaps
+        if (currentSpeed != null) {
           const trackLengthKm = (lengthMeters ?? 5000) / 1000;
           progressDelta = (currentSpeed / 3600) / Math.max(trackLengthKm, 0.1);
         }
