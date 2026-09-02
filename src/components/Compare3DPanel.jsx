@@ -20,6 +20,90 @@ function fmtAlt(m, unit) {
   return unit === 'imperial' ? `${(m * 3.28084).toFixed(0)} ft` : `${m} m`;
 }
 
+function RaceDataPanel({ primaryTelemetry, secondaryTelemetry, primaryStints, secondaryStints, primaryPitStops, secondaryPitStops, primaryTotalLaps, secondaryTotalLaps, primaryRaceControl, secondaryRaceControl, primaryQualiData, secondaryQualiData }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasAnyData = primaryTelemetry || secondaryTelemetry || primaryRaceControl || secondaryRaceControl;
+  if (!hasAnyData) return null;
+
+  const hasTire = primaryStints || secondaryStints;
+  const hasRC = primaryRaceControl || secondaryRaceControl;
+  const hasSectors = primaryTelemetry?.lap || secondaryTelemetry?.lap;
+
+  // Count loaded sections for the badge
+  const loadedCount = [hasTire, hasRC, hasSectors].filter(Boolean).length;
+
+  return (
+    <div className="race-data-panel">
+      <button
+        className={`race-data-toggle ${expanded ? 'expanded' : ''}`}
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="race-data-toggle-left">
+          <span className="race-data-chevron">{expanded ? '▾' : '▸'}</span>
+          <span className="race-data-title">Race Data</span>
+          <span className="race-data-count">{loadedCount} sources</span>
+        </div>
+        <div className="race-data-toggle-pills">
+          {hasTire && <span className="race-data-pill tire">Tires</span>}
+          {hasRC && <span className="race-data-pill rc">Flags</span>}
+          {hasSectors && <span className="race-data-pill sectors">Sectors</span>}
+        </div>
+      </button>
+      {expanded && (
+        <div className="race-data-content">
+          {/* Tire Strategy — one per driver */}
+          {hasTire && (
+            <div className="race-context-row">
+              {primaryTelemetry && (
+                <TireStrategy
+                  stints={primaryStints}
+                  pitStops={primaryPitStops}
+                  totalLaps={primaryTotalLaps}
+                  driverNumber={primaryTelemetry.lap.driver}
+                  driverName={primaryTelemetry.lap.driverName}
+                />
+              )}
+              {secondaryTelemetry && (
+                <TireStrategy
+                  stints={secondaryStints}
+                  pitStops={secondaryPitStops}
+                  totalLaps={secondaryTotalLaps}
+                  driverNumber={secondaryTelemetry.lap.driver}
+                  driverName={secondaryTelemetry.lap.driverName}
+                />
+              )}
+            </div>
+          )}
+          {/* Race Control Flags */}
+          {hasRC && (
+            <div className="race-context-row">
+              {primaryRaceControl && (
+                <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
+              )}
+              {secondaryRaceControl && !primaryRaceControl && (
+                <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
+              )}
+            </div>
+          )}
+          {/* Sector Comparison */}
+          {hasSectors && (
+            <div className="race-context-row">
+              <SectorComparison
+                primaryLap={primaryTelemetry?.lap}
+                secondaryLap={secondaryTelemetry?.lap}
+                primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
+                primaryAllLaps={primaryQualiData.current?.laps}
+                secondaryAllLaps={secondaryQualiData.current?.laps}
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, loadStep, sharedProgressRef }) {
   return (
     <div className="track3d-card">
@@ -456,7 +540,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </button>
         </div>
 
-        <div className="track3d-toolbar">
+        <div className="compare3d-toolbar">
           <div className="anim-controls">
             <span className="toolbar-label">Animate</span>
             <button className={`anim-btn${animSpeed === 0 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0); setAnimPaused(false); }}>Off</button>
@@ -614,74 +698,40 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           </Suspense>
         )}
 
-        {/* Telemetry panels — only in Side-by-Side mode */}
-        {viewMode === 'sidebyside' && (
-          <>
-            {/* Tire Strategy — one per driver */}
-            {telemetryMode && (
-              <div className="race-context-row">
-                {primaryTelemetry && (
-                  <TireStrategy
-                    stints={primaryStints}
-                    pitStops={primaryPitStops}
-                    totalLaps={primaryTotalLaps}
-                    driverNumber={primaryTelemetry.lap.driver}
-                    driverName={primaryTelemetry.lap.driverName}
-                  />
-                )}
-                {secondaryTelemetry && (
-                  <TireStrategy
-                    stints={secondaryStints}
-                    pitStops={secondaryPitStops}
-                    totalLaps={secondaryTotalLaps}
-                    driverNumber={secondaryTelemetry.lap.driver}
-                    driverName={secondaryTelemetry.lap.driverName}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Race Control Flags */}
-            {telemetryMode && (primaryRaceControl || secondaryRaceControl) && (
-              <div className="race-context-row">
-                {primaryRaceControl && (
-                  <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
-                )}
-                {secondaryRaceControl && !primaryRaceControl && (
-                  <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
-                )}
-              </div>
-            )}
-
-            {/* Sector Comparison */}
-            {telemetryMode && (
-              <div className="race-context-row">
-                <SectorComparison
-                  primaryLap={primaryTelemetry?.lap}
-                  secondaryLap={secondaryTelemetry?.lap}
-                  primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
-                  secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
-                  primaryAllLaps={primaryQualiData.current?.laps}
-                  secondaryAllLaps={secondaryQualiData.current?.laps}
-                />
-              </div>
-            )}
-
-
-          </>
-        )}
-
+        {/* Speed legend — immediately below 3D viewports */}
         {viewMode === 'sidebyside' && telemetryMode && (
-          <div className="speed-legend">
-            <span className="speed-legend-label">Speed</span>
-            <div className="speed-legend-bar" />
-            <div className="speed-legend-ticks">
-              <span>80 km/h</span>
-              <span>160</span>
-              <span>240</span>
-              <span>320+</span>
+          <div className="speed-legend-bar-wrap">
+            <div className="speed-legend-inner">
+              <span className="speed-legend-label">Ribbon Speed</span>
+              <div className="speed-legend-track">
+                <div className="speed-legend-bar" />
+                <div className="speed-legend-ticks">
+                  <span>80</span>
+                  <span>160</span>
+                  <span>240</span>
+                  <span>320 km/h</span>
+                </div>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Race Data — collapsible banner wrapping tire/race-control/sectors */}
+        {viewMode === 'sidebyside' && telemetryMode && (
+          <RaceDataPanel
+            primaryTelemetry={primaryTelemetry}
+            secondaryTelemetry={secondaryTelemetry}
+            primaryStints={primaryStints}
+            secondaryStints={secondaryStints}
+            primaryPitStops={primaryPitStops}
+            secondaryPitStops={secondaryPitStops}
+            primaryTotalLaps={primaryTotalLaps}
+            secondaryTotalLaps={secondaryTotalLaps}
+            primaryRaceControl={primaryRaceControl}
+            secondaryRaceControl={secondaryRaceControl}
+            primaryQualiData={primaryQualiData}
+            secondaryQualiData={secondaryQualiData}
+          />
         )}
 
         {viewMode === 'sidebyside' && (

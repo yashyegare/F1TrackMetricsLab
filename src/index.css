@@ -982,34 +982,47 @@ body {
 }
 
 /* Speed legend for telemetry ribbon */
-.speed-legend {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+/* Speed legend — below 3D viewports */
+.speed-legend-bar-wrap {
   width: 100%;
-  max-width: 400px;
-  margin: 8px auto 0;
-  background: #131316;
-  border: 1px solid #1e1e22;
-  border-radius: 10px;
-  padding: 10px 16px;
+  max-width: 900px;
+  margin: 12px auto 0;
+  background: linear-gradient(135deg, rgba(18, 18, 20, 0.9) 0%, rgba(14, 14, 16, 0.95) 100%);
+  border: 1px solid #222226;
+  border-radius: 12px;
+  padding: 14px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.speed-legend-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .speed-legend-label {
   font-size: 9px;
-  color: #555558;
+  color: #8a8a90;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.speed-legend-track {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .speed-legend-bar {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   background: linear-gradient(to right, #3737c8, #5b5ba4, #92926d, #c8c837, #ffff00, #ffc800, #ff9200, #ff5b00, #ff3700, #ff0900);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255,255,255,0.1);
 }
 
 .speed-legend-ticks {
@@ -1017,7 +1030,8 @@ body {
   justify-content: space-between;
   width: 100%;
   font-size: 9px;
-  color: #555558;
+  color: #6a6a70;
+  font-weight: 500;
 }
 
 /* Telemetry scrubber */
@@ -1262,6 +1276,127 @@ body {
   border-radius: 6px;
   padding: 3px 8px;
   font-weight: 500;
+}
+
+/* ---- Race Data Panel (collapsible) ---- */
+.race-data-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 12px auto 0;
+  background: linear-gradient(135deg, rgba(18, 18, 20, 0.9) 0%, rgba(14, 14, 16, 0.95) 100%);
+  border: 1px solid #222226;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.race-data-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  color: #d8d8db;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 12px;
+}
+
+.race-data-toggle:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.race-data-toggle.expanded {
+  border-bottom: 1px solid #222226;
+}
+
+.race-data-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.race-data-chevron {
+  font-size: 11px;
+  color: #6a6a70;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.race-data-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #d8d8db;
+}
+
+.race-data-count {
+  font-size: 10px;
+  color: #6a6a70;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border: 1px solid #222226;
+}
+
+.race-data-toggle-pills {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.race-data-pill {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #282830;
+  color: #8a8a90;
+}
+
+.race-data-pill.tire {
+  background: rgba(255, 200, 0, 0.08);
+  border-color: rgba(255, 200, 0, 0.2);
+  color: #ffc800;
+}
+
+.race-data-pill.rc {
+  background: rgba(225, 6, 0, 0.08);
+  border-color: rgba(225, 6, 0, 0.2);
+  color: #e10600;
+}
+
+.race-data-pill.sectors {
+  background: rgba(0, 163, 255, 0.08);
+  border-color: rgba(0, 163, 255, 0.2);
+  color: #00a3ff;
+}
+
+.race-data-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.race-data-content .race-context-row {
+  padding: 14px 16px;
+  margin: 0;
+  border-top: 1px solid #1a1a1e;
+}
+
+.race-data-content .race-context-row:first-child {
+  border-top: none;
 }
 
 /* ---- Race Control Overlay ---- */
@@ -1711,17 +1846,18 @@ body {
 
 /* ---- 3D toolbar ---- */
 
-.track3d-toolbar {
+.compare3d-toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
   flex-wrap: wrap;
   padding: 8px 10px;
-  background: rgba(12, 12, 14, 0.8);
-  border: 1px solid #1a1a1e;
-  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(16, 16, 18, 0.95) 0%, rgba(12, 12, 14, 0.98) 100%);
+  border: 1px solid #1e1e22;
+  border-radius: 12px;
   margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .anim-controls, .screenshot-controls {
@@ -1787,14 +1923,16 @@ body {
   color: white;
   box-shadow: 0 0 14px rgba(225, 6, 0, 0.4), 0 2px 6px rgba(0,0,0,0.3);
   transform: translateY(-1px);
+  letter-spacing: 0.3px;
+  font-weight: 700;
 }
 
 .telemetry-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding-left: 12px;
-  border-left: 1px solid #1a1a1e;
+  border-left: 1px solid #1e1e22;
 }
 
 .telemetry-year-select {
@@ -2884,7 +3022,7 @@ body {
     top: 60px;
   }
 
-  .track3d-toolbar {
+  .compare3d-toolbar {
     gap: 6px;
     padding: 0 4px;
   }
