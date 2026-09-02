@@ -547,67 +547,6 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
   );
 }
 
-// --- Sector delta shading: colored lines on ribbon showing which driver is faster ---
-
-function SectorDeltaShading({ normalizedPoints, elevation, primaryProjected, secondaryProjected }) {
-  const lines = useMemo(() => {
-    if (!primaryProjected?.length || !secondaryProjected?.length || normalizedPoints.length === 0) return [];
-    const n = normalizedPoints.length;
-    const sectorSize = Math.floor(n / 3);
-    const result = [];
-
-    for (let s = 0; s < 3; s++) {
-      const start = s * sectorSize;
-      const end = s === 2 ? n : (s + 1) * sectorSize;
-
-      // Average speed of each driver in this sector
-      const avgSpeed = (proj) => {
-        const speeds = [];
-        for (let i = start; i < end; i++) {
-          const progress = i / n;
-          // Find nearest projected point
-          let best = null, bestDist = Infinity;
-          for (const p of proj) {
-            const d = Math.abs(p.progress - progress);
-            if (d < bestDist) { bestDist = d; best = p; }
-          }
-          if (best && best.speed) speeds.push(best.speed);
-        }
-        return speeds.length > 0 ? speeds.reduce((a, b) => a + b, 0) / speeds.length : 0;
-      };
-
-      const speedA = avgSpeed(primaryProjected);
-      const speedB = avgSpeed(secondaryProjected);
-      const diff = speedA - speedB;
-
-      // Only show if meaningful difference (> 2 km/h)
-      if (Math.abs(diff) < 2) continue;
-
-      const color = diff > 0 ? '#00cc44' : '#e10600'; // green = A faster, red = B faster
-      const pts = [];
-      for (let i = start; i <= Math.min(end, n - 1); i++) {
-        pts.push([normalizedPoints[i][0], (elevation[i] ?? 0) + 0.005, normalizedPoints[i][1]]);
-      }
-      // Close the loop for the last sector
-      if (s === 2 && pts.length > 0) {
-        pts.push([normalizedPoints[0][0], (elevation[0] ?? 0) + 0.005, normalizedPoints[0][1]]);
-      }
-      result.push({ pts, color, speedA, speedB, sector: s + 1 });
-    }
-    return result;
-  }, [normalizedPoints, elevation, primaryProjected, secondaryProjected]);
-
-  if (lines.length === 0) return null;
-
-  return (
-    <group>
-      {lines.map((l, i) => (
-        <Line key={`sector-delta-${i}`} points={l.pts} color={l.color} lineWidth={4} transparent opacity={0.7} />
-      ))}
-    </group>
-  );
-}
-
 // --- Main overlay scene ---
 
 function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, secondaryAltitude, primaryId, secondaryId, primaryDrsZones, secondaryDrsZones, animSpeed, animPaused, showLabels, showTrackA, showTrackB, syncMode, seaLevelMode, sharedProgressRef, primaryTelemetry, secondaryTelemetry, gapRef }) {
@@ -655,24 +594,6 @@ function OverlayScene({ primaryDetail, secondaryDetail, primaryAltitude, seconda
       <ambientLight intensity={0.55} />
       <directionalLight position={[diag * 0.6, diag * 0.9, diag * 0.35]} intensity={1.15} />
       <directionalLight position={[-diag * 0.5, diag * 0.4, -diag * 0.4]} intensity={0.35} />
-
-      {/* Sector delta shading on both tracks */}
-      {(() => {
-        const normA = normalizePoints(primaryDetail.points);
-        const normB = normalizePoints(secondaryDetail.points);
-        const elevA = computeOverlayElevation(primaryDetail.points, primaryDetail.corners, primaryAltitude, normA);
-        const elevB = computeOverlayElevation(secondaryDetail.points, secondaryDetail.corners, secondaryAltitude, normB);
-        return (
-          <>
-            {showTrackA && primaryTelemetry && secondaryTelemetry && (
-              <SectorDeltaShading normalizedPoints={normA} elevation={elevA} primaryProjected={primaryTelemetry} secondaryProjected={secondaryTelemetry} />
-            )}
-            {showTrackB && primaryTelemetry && secondaryTelemetry && (
-              <SectorDeltaShading normalizedPoints={normB} elevation={elevB} primaryProjected={primaryTelemetry} secondaryProjected={secondaryTelemetry} />
-            )}
-          </>
-        );
-      })()}
 
       {showTrackA && (
         <OverlayTrack
