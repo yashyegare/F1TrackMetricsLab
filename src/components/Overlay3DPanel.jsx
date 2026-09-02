@@ -967,12 +967,12 @@ export default function Overlay3DPanel({ primary, secondary, primaryDetail, seco
         <div className="overlay-footer-legend">
           <span className="overlay-legend-item">
             <span className="overlay-legend-dot" style={{ background: '#e10600' }} />
-            {primary.name}
+            {primary.name}{primaryLap?.driverName ? <span className="overlay-legend-driver"> — {primaryLap.driverName.split(' ').pop()}</span> : ''}
           </span>
           <span className="overlay-legend-sep">vs</span>
           <span className="overlay-legend-item">
             <span className="overlay-legend-dot" style={{ background: '#00a3ff' }} />
-            {secondary.name}
+            {secondary.name}{secondaryLap?.driverName ? <span className="overlay-legend-driver"> — {secondaryLap.driverName.split(' ').pop()}</span> : ''}
           </span>
         </div>
       </div>

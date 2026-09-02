@@ -2259,6 +2259,13 @@ body {
   flex-shrink: 0;
 }
 
+.overlay-legend-driver {
+  font-size: 10px;
+  font-weight: 500;
+  color: #5a5a5e;
+  font-style: italic;
+}
+
 .overlay-legend-sep {
   font-size: 9px;
   color: #252528;
