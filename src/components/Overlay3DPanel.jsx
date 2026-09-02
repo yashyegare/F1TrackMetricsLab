@@ -299,6 +299,50 @@ function OverlayRibbon({ points, color, opacity, elevation, circuitId }) {
   );
 }
 
+// --- Start/Finish line marker ---
+function StartFinishMarker({ position, elevation, color, diag }) {
+  const markerWidth = diag * 0.04;
+  const markerThickness = diag * 0.002;
+  const y = elevation + 0.003;
+  const checkers = 6;
+  const checkerW = markerWidth / checkers;
+
+  return (
+    <group position={[position[0], y, position[1]]}>
+      {/* Checkered line across the track */}
+      {Array.from({ length: checkers }).map((_, i) => (
+        <mesh key={i} position={[i * checkerW - markerWidth / 2 + checkerW / 2, 0, 0]}>
+          <boxGeometry args={[checkerW, markerThickness, markerThickness * 3]} />
+          <meshStandardMaterial
+            color={i % 2 === 0 ? '#ffffff' : '#111111'}
+            emissive={i % 2 === 0 ? '#ffffff' : '#000000'}
+            emissiveIntensity={i % 2 === 0 ? 0.3 : 0}
+          />
+        </mesh>
+      ))}
+      {/* Small label */}
+      <Html position={[0, markerThickness * 4, 0]} center style={{ pointerEvents: 'none' }}>
+        <div style={{
+          background: 'rgba(8,8,10,0.85)',
+          backdropFilter: 'blur(6px)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '3px',
+          padding: '1px 5px',
+          fontSize: '8px',
+          fontWeight: 700,
+          color: '#ffffff',
+          whiteSpace: 'nowrap',
+          fontFamily: 'system-ui, sans-serif',
+          letterSpacing: '0.5px',
+          textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+        }}>
+          S/F
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 // --- Corner marker (simplified for overlay) ---
 
 function OverlayCornerMarker({ position, poleHeight, accentColor, y = 0 }) {
@@ -510,6 +554,7 @@ function OverlayTrack({ detail, color, opacity, showCorners, altitude, circuitId
           </div>
         </Html>
       )}
+      <StartFinishMarker position={normalizedPoints[0]} elevation={elevation[0] ?? 0} color={color} diag={diag} />
       <OverlayRibbon points={normalizedPoints} color={color} opacity={opacity} elevation={elevation} circuitId={circuitId} />
       {normalizedCorners.map((corner) => (
         <OverlayCornerMarker
