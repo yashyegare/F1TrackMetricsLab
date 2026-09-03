@@ -374,6 +374,22 @@ export default function App() {
             </li>
           ))}
         </ul>
+
+        <div className="sidebar-footer-links">
+          <a
+            href="https://formula-1-prediction-upd.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+            className="sidebar-project-link"
+          >
+            <span className="sidebar-project-icon">🔮</span>
+            <span>
+              <span className="sidebar-project-title">Race Predictions</span>
+              <span className="sidebar-project-sub">ML-powered race outcome predictions</span>
+            </span>
+            <span className="sidebar-project-arrow">↗</span>
+          </a>
+        </div>
       </aside>
 
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
