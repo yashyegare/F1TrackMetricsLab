@@ -386,6 +386,17 @@ body {
 
 /* Sidebar footer cross-links */
 
+@keyframes pillPulse {
+  0%, 100% {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 0 0 rgba(225,6,0,0);
+    border-color: rgba(225, 6, 0, 0.18);
+  }
+  50% {
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4), 0 0 18px rgba(225,6,0,0.22), 0 0 36px rgba(225,6,0,0.08);
+    border-color: rgba(225, 6, 0, 0.45);
+  }
+}
+
 .prediction-pill {
   position: absolute;
   top: 14px;
@@ -408,6 +419,7 @@ body {
   white-space: nowrap;
   transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  animation: pillPulse 2s ease-in-out 3;
 }
 
 .prediction-pill:hover {
