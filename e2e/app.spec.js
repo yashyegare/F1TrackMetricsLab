@@ -5,7 +5,7 @@ test.describe('F1 Track Metrics Lab', () => {
     await page.goto('/');
     await expect(page.locator('text=F1 Track Metrics Lab')).toBeVisible();
     await expect(page.locator('text=Unofficial track explorer')).toBeVisible();
-    await expect(page.locator('text=CIRCUITS')).toBeVisible();
+    await expect(page.locator('.sidebar-list-header')).toBeVisible();
   });
 
   test('sidebar shows circuit list', async ({ page }) => {
