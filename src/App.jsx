@@ -403,8 +403,8 @@ export default function App() {
                   ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                   : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'}
               />
-              <Polyline key={selected.id} positions={positions} pathOptions={{ color: '#e10600', weight: 4 }} />
-              <LapAnimation key={selected.id} positions={positions} />
+              <Polyline key={`track-${selected.id}`} positions={positions} pathOptions={{ color: '#e10600', weight: 4 }} />
+              <LapAnimation key={`anim-${selected.id}`} positions={positions} />
               <FlyToCircuit circuit={selected} />
             </MapContainer>
             <div className="basemap-toggle">

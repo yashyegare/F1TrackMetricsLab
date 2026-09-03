@@ -21,6 +21,10 @@ vi.mock('@react-three/fiber', () => ({
 }));
 
 describe('App', () => {
+  beforeEach(() => {
+    try { localStorage.clear(); } catch { Object.keys(localStorage).forEach(k => localStorage.removeItem(k)); }
+  });
+
   test('renders landing page by default', async () => {
     render(<App />);
     expect(screen.getByText(/F1 Track/)).toBeInTheDocument();
