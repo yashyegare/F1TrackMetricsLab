@@ -392,11 +392,12 @@ export default function App() {
       />
 
       <main className="map-area">
+        {mode !== 'map' && (
         <a
           href="https://formula-1-prediction-upd.vercel.app"
           target="_blank"
           rel="noreferrer"
-          className={`prediction-pill${mode === 'map' ? ' pill-left' : ''}`}
+          className="prediction-pill"
         >
           <svg className="prediction-pill-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10 2L3 6v8l7 4 7-4V6l-7-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
@@ -412,6 +413,7 @@ export default function App() {
             </svg>
           </span>
         </a>
+        )}
         {!mode ? (
           <LandingHero />
         ) : mode === 'map' && selected ? (
