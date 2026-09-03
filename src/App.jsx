@@ -375,21 +375,7 @@ export default function App() {
           ))}
         </ul>
 
-        <div className="sidebar-footer-links">
-          <a
-            href="https://formula-1-prediction-upd.vercel.app"
-            target="_blank"
-            rel="noreferrer"
-            className="sidebar-project-link"
-          >
-            <span className="sidebar-project-icon">🔮</span>
-            <span>
-              <span className="sidebar-project-title">Race Predictions</span>
-              <span className="sidebar-project-sub">ML-powered race outcome predictions</span>
-            </span>
-            <span className="sidebar-project-arrow">↗</span>
-          </a>
-        </div>
+
       </aside>
 
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
@@ -406,6 +392,26 @@ export default function App() {
       />
 
       <main className="map-area">
+        <a
+          href="https://formula-1-prediction-upd.vercel.app"
+          target="_blank"
+          rel="noreferrer"
+          className="prediction-pill"
+        >
+          <svg className="prediction-pill-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2L3 6v8l7 4 7-4V6l-7-4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+            <path d="M10 2v12" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+            <path d="M17 6l-7 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <path d="M3 6l7 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            <circle cx="10" cy="8" r="1.5" fill="currentColor"/>
+          </svg>
+          <span className="prediction-pill-label">Race Predictions</span>
+          <span className="prediction-pill-arrow">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+        </a>
         {!mode ? (
           <LandingHero />
         ) : mode === 'map' && selected ? (
