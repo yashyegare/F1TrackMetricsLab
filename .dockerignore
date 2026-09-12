@@ -1,0 +1,14 @@
+node_modules
+dist
+e2e
+playwright-report
+test-results
+coverage
+.git
+.github
+.vscode
+.freebuff
+.freebuffpreview.log*
+*.md
+npm-debug.log*
+.env*
