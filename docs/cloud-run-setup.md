@@ -130,7 +130,7 @@ identity (via local impersonation) before CI ever ran:
 | `roles/iam.serviceAccountUser` | on `859763063159-compute@developer.gserviceaccount.com` only | the build must run as the default Cloud Build SA |
 | `roles/storage.objectAdmin` + `roles/storage.legacyBucketReader` | bucket `run-sources-f1-track-metrics-lab-asia-south1` only | staging bucket for the uploaded source zip. An initial `storage.admin` grant was proven broader than needed: it was revoked and a full deploy still succeeded — verified by a 403 on `storage.buckets.getIamPolicy` under the deployer identity, a permission only the broader role carries. Do not re-widen. |
 | `roles/storage.viewer` | project | gcloud lists buckets to resolve that staging bucket |
-| `roles/iam.serviceAccountTokenCreator` | on `f1-tml-deployer`, user member only | lets you impersonate the SA locally to test deploys; not needed by CI |
+| `roles/iam.serviceAccountTokenCreator` on `f1-tml-deployer` (user member) | **revoked** after the grant-verification campaign finished — the SA is now reachable only via the pinned WIF path. Re-grant for the next local impersonation test session: `gcloud iam service-accounts add-iam-policy-binding f1-tml-deployer@f1-track-metrics-lab.iam.gserviceaccount.com --member=user:tbzyash1@gmail.com --role=roles/iam.serviceAccountTokenCreator`, and revoke again when done. |
 
 Known benign CI warning: `Setting IAM policy failed ...` — the deployer
 cannot set IAM policy (`run.developer` deliberately excludes it) and does
