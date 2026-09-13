@@ -40,7 +40,7 @@ ML-powered race outcome prediction system. Two backends: a Python service ingest
 
 Interactive circuit explorer with 3D visualization and real telemetry comparison. Pulls live qualifying data from OpenF1, aligns it to track geometry via rotation-search projection, and renders speed-colored ribbons + variable-speed car dots in WebGL. Zero backend — all client-side.
 
-[`Live Demo ↗`](https://f1-track-metrics-lab.vercel.app) [`Source ↗`](https://github.com/yashyegare/F1TrackMetricsLab)
+[`Live Demo ↗`](https://f1-track-metrics-lab.vercel.app) [`Containerized deploy ↗`](https://track-metrics-lab-859763063159.asia-south1.run.app) [`Source ↗`](https://github.com/yashyegare/F1TrackMetricsLab)
 
 </td>
 </tr>
