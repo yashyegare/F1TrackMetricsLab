@@ -6,7 +6,7 @@
 [![Tests](https://img.shields.io/badge/tests-40%20passing-brightgreen)](#testing)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#disclaimer)
 
-**Live Demo →** [f1-track-metrics-lab.vercel.app](https://f1-track-metrics-lab.vercel.app)
+**Live Demo →** [f1-track-metrics-lab.vercel.app](https://f1-track-metrics-lab.vercel.app) · **Containerized deploy →** [track-metrics-lab on Cloud Run](https://track-metrics-lab-859763063159.asia-south1.run.app) — [setup & CI/CD notes](docs/cloud-run-setup.md)
 
 <p align="center">
   <img src="public/og-image.svg" alt="F1 Track Metrics Lab" width="100%" style="max-width: 800px; border-radius: 12px; margin: 24px 0;" />
