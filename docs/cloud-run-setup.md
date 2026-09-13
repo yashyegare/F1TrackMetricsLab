@@ -128,7 +128,7 @@ identity (via local impersonation) before CI ever ran:
 |---|---|---|
 | `roles/artifactregistry.writer` | repo `cloud-run-source-deploy` (asia-south1) only | source upload pushes the built image there |
 | `roles/iam.serviceAccountUser` | on `859763063159-compute@developer.gserviceaccount.com` only | the build must run as the default Cloud Build SA |
-| `roles/storage.admin` | bucket `run-sources-f1-track-metrics-lab-asia-south1` only | staging bucket for the uploaded source zip |
+| `roles/storage.objectAdmin` + `roles/storage.legacyBucketReader` | bucket `run-sources-f1-track-metrics-lab-asia-south1` only | staging bucket for the uploaded source zip. An initial `storage.admin` grant was proven broader than needed: it was revoked and a full deploy still succeeded — verified by a 403 on `storage.buckets.getIamPolicy` under the deployer identity, a permission only the broader role carries. Do not re-widen. |
 | `roles/storage.viewer` | project | gcloud lists buckets to resolve that staging bucket |
 | `roles/iam.serviceAccountTokenCreator` | on `f1-tml-deployer`, user member only | lets you impersonate the SA locally to test deploys; not needed by CI |
 
