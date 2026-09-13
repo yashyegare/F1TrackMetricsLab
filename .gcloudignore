@@ -1,0 +1,15 @@
+# Files sent to Cloud Build on `gcloud run deploy --source .`
+# Everything here is dev-only; the Docker build needs none of it.
+.git
+.github
+.freebuff
+.freebuff*
+.vscode
+node_modules/
+dist/
+test-results/
+docs/
+*.log
+*.log.*
+.env
+.env.*

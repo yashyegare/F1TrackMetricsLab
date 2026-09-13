@@ -29,23 +29,23 @@ service account must be able to act as the deployer SA when the job runs
 under its identity.
 
 ```bash
-gcloud iam service-accounts create cloud-run-deployer \
+gcloud iam service-accounts create f1-tml-deployer \
   --display-name "GitHub Actions deployer for Track Metrics Lab" \
   --project $PROJECT_ID
 
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member "serviceAccount:cloud-run-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:f1-tml-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
   --role roles/run.developer
 
 # Needed because `gcloud run deploy --source .` submits a Cloud Build job.
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member "serviceAccount:cloud-run-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:f1-tml-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
   --role roles/cloudbuild.builds.editor
 
 # First deploy creates the service with public ingress; later deploys only
 # update revisions, which run.developer covers.
 gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member "serviceAccount:cloud-run-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
+  --member "serviceAccount:f1-tml-deployer@$PROJECT_ID.iam.gserviceaccount.com" \
   --role roles/run.serviceAgent
 ```
 
@@ -77,7 +77,7 @@ gcloud iam workload-identity-pools providers create-oidc github-provider \
   --project $PROJECT_ID
 
 gcloud iam service-accounts add-iam-policy-binding \
-  cloud-run-deployer@$PROJECT_ID.iam.gserviceaccount.com \
+  f1-tml-deployer@$PROJECT_ID.iam.gserviceaccount.com \
   --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/yashyegare/F1TrackMetricsLab" \
   --project $PROJECT_ID
@@ -98,18 +98,12 @@ gcloud run deploy track-metrics-lab \
 
 When it finishes it prints the service URL — that's the app live on Cloud Run.
 
-## 5. Fill in the workflow placeholders
+## 5. Workflow placeholders (filled in)
 
-In `.github/workflows/ci.yml`, replace:
-
-- `PROJECT_ID` → your project id (two places: the deploy step and the
-  smoke-test step)
-- `PROJECT_NUMBER` → the numeric project number (auth step)
-- `PROJECT_ID.iam.gserviceaccount.com` in the auth step if you renamed the SA
-
-Then commit and push to `main`. The deploy job runs after tests + e2e, and
-the smoke-test step fails the workflow loudly if the new revision doesn't
-serve 200.
+All placeholders in `.github/workflows/ci.yml` are filled in on the
+docker-deploy branch: project `f1-track-metrics-lab`, service account
+`f1-tml-deployer`, provider `github-pool/github-provider`, region
+`asia-south1`. Pushing that branch to `main` triggers the full pipeline.
 
 ## Verify
 
@@ -123,3 +117,24 @@ deploy log. To tighten later: this setup is already least-privilege
 (`run.developer`, not `run.admin`) and the WIF condition pins the repo and
 branch — the only widening left is removing `--allow-unauthenticated` behind
 an LB/IAP if this ever stops being a public demo.
+
+## Addendum — grants actually used by the first deploy (verified live)
+
+The first `--source` deploy needed four grants beyond the list above. Each
+was verified by running a full deploy under the service account's own
+identity (via local impersonation) before CI ever ran:
+
+| Grant | Scope | Why |
+|---|---|---|
+| `roles/artifactregistry.writer` | repo `cloud-run-source-deploy` (asia-south1) only | source upload pushes the built image there |
+| `roles/iam.serviceAccountUser` | on `859763063159-compute@developer.gserviceaccount.com` only | the build must run as the default Cloud Build SA |
+| `roles/storage.admin` | bucket `run-sources-f1-track-metrics-lab-asia-south1` only | staging bucket for the uploaded source zip |
+| `roles/storage.viewer` | project | gcloud lists buckets to resolve that staging bucket |
+| `roles/iam.serviceAccountTokenCreator` | on `f1-tml-deployer`, user member only | lets you impersonate the SA locally to test deploys; not needed by CI |
+
+Known benign CI warning: `Setting IAM policy failed ...` — the deployer
+cannot set IAM policy (`run.developer` deliberately excludes it) and does
+not need to: the service was made public by the first manual deploy, so
+`--allow-unauthenticated` is a no-op on every later deploy. If the service
+ever goes private, the smoke test fails loudly by design — update the
+smoke-test step in the same change.

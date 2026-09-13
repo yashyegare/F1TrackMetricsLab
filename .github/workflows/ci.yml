@@ -80,8 +80,8 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider
-          service_account: cloud-run-deployer@PROJECT_ID.iam.gserviceaccount.com
+          workload_identity_provider: projects/859763063159/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: f1-tml-deployer@f1-track-metrics-lab.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
@@ -91,17 +91,18 @@ jobs:
       - name: Deploy to Cloud Run
         run: >-
           gcloud run deploy track-metrics-lab
-          --project PROJECT_ID
+          --project f1-track-metrics-lab
           --region asia-south1
           --source .
           --allow-unauthenticated
+          --quiet
 
       # Fail the workflow loudly if the new revision doesn't actually serve.
       # The service is public (allow-unauthenticated), so no auth header.
       - name: Smoke test the new revision
         run: |
           URL=$(gcloud run services describe track-metrics-lab \
-            --project PROJECT_ID --region asia-south1 \
+            --project f1-track-metrics-lab --region asia-south1 \
             --format='value(status.url)')
           code=000
           for i in 1 2 3 4 5; do
