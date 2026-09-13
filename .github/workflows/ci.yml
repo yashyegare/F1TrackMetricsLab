@@ -55,3 +55,59 @@ jobs:
 
       - name: Run E2E tests
         run: npx playwright test
+
+  deploy:
+    # Real CI->CD: only main-branch pushes after the full test + e2e gates pass.
+    # PRs and other branches never reach this job.
+    runs-on: ubuntu-latest
+    needs: [test, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      id-token: write  # required for Workload Identity Federation auth
+
+    concurrency:
+      group: deploy-main
+      cancel-in-progress: false  # queue deploys; never kill one mid-flight
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keyless auth via Workload Identity Federation - no service-account
+      # JSON keys stored as secrets. One-time setup (values below must be
+      # filled in) is documented in docs/cloud-run-setup.md.
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/859763063159/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: f1-tml-deployer@f1-track-metrics-lab.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # --source . makes Cloud Build build the image from the Dockerfile in
+      # this repo and push it to Artifact Registry - no local docker needed.
+      - name: Deploy to Cloud Run
+        run: >-
+          gcloud run deploy track-metrics-lab
+          --project f1-track-metrics-lab
+          --region asia-south1
+          --source .
+          --allow-unauthenticated
+          --quiet
+
+      # Fail the workflow loudly if the new revision doesn't actually serve.
+      # The service is public (allow-unauthenticated), so no auth header.
+      - name: Smoke test the new revision
+        run: |
+          URL=$(gcloud run services describe track-metrics-lab \
+            --project f1-track-metrics-lab --region asia-south1 \
+            --format='value(status.url)')
+          code=000
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$URL")
+            if [ "$code" = "200" ]; then echo "revision serves 200"; exit 0; fi
+            echo "attempt $i: HTTP $code, retrying in 5s"; sleep 5
+          done
+          echo "smoke test failed: last HTTP $code from $URL"; exit 1
