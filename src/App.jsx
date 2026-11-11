@@ -192,7 +192,7 @@ function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
 function FlyToCircuit({ circuit }) {
   const map = useMap();
   useEffect(() => {
-    if (circuit) map.flyTo([circuit.lat, circuit.lon], circuit.zoom, { duration: 1.1 });
+    if (circuit) map.flyTo([circuit.lat, circuit.lon], circuit.zoom, { duration: 1.1, animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches });
   }, [circuit, map]);
   return null;
 }
@@ -201,6 +201,7 @@ function FlyToCircuit({ circuit }) {
 
 export default function App() {
   const searchRef = useRef(null);
+  const hamburgerRef = useRef(null);
   // Zustand store selectors — only re-render when the selected slice changes
   const mode = useStore(s => s.mode);
   const selectedId = useStore(s => s.selectedId);
@@ -225,6 +226,20 @@ export default function App() {
   const setFilterContinent = useStore(s => s.setFilterContinent);
   const setSortBy = useStore(s => s.setSortBy);
   const selectCircuit = useStore(s => s.selectCircuit);
+  useEffect(() => {
+    if (!sidebarOpen || window.innerWidth > 768) return;
+    searchRef.current?.focus();
+    const trap = event => {
+      if (event.key !== 'Tab') return;
+      const items = [...document.querySelectorAll('#circuit-sidebar button:not(:disabled), #circuit-sidebar input, #circuit-sidebar select')];
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    const resize = () => { if (window.innerWidth > 768) setSidebarOpen(false); };
+    window.addEventListener('keydown', trap); window.addEventListener('resize', resize);
+    return () => { window.removeEventListener('keydown', trap); window.removeEventListener('resize', resize); };
+  }, [sidebarOpen, setSidebarOpen]);
 
   // Derived state
   const selected = useMemo(() => circuits.find(c => c.id === selectedId) || circuits[0] || null, [selectedId]);
@@ -251,7 +266,7 @@ export default function App() {
     switch (sortBy) {
       case 'opened': sorted.sort((a, b) => (a.opened ?? 9999) - (b.opened ?? 9999)); break;
       case 'length': sorted.sort((a, b) => (b.length ?? 0) - (a.length ?? 0)); break;
-      case 'corners': sorted.sort((a, b) => (b.coordinates?.length ?? 0) - (a.coordinates?.length ?? 0)); break;
+      case 'corners': sorted.sort((a, b) => getTrackDetail(b).corners.length - getTrackDetail(a).corners.length); break;
       case 'continent': sorted.sort((a, b) => (a.continent || '').localeCompare(b.continent || '') || a.name.localeCompare(b.name)); break;
       default: sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
@@ -262,11 +277,12 @@ export default function App() {
   useEffect(() => {
     function onKey(e) {
       const tag = e.target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === 'Escape') { if (sidebarOpen) { setSidebarOpen(false); hamburgerRef.current?.focus(); } return; }
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault(); toggleCmdOpen(); return;
       }
-      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus(); return; }
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || e.target.isContentEditable || cmdOpen || mode === 'compare3d') return;
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); if (window.innerWidth <= 768) setSidebarOpen(true); requestAnimationFrame(() => searchRef.current?.focus()); return; }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const list = filtered.length > 0 ? filtered : circuits;
@@ -279,7 +295,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, filtered, toggleCmdOpen, setSelectedId]);
+  }, [selectedId, filtered, toggleCmdOpen, setSelectedId, setSidebarOpen, sidebarOpen, cmdOpen, mode]);
 
   const handleCmdSelect = useCallback((id) => {
     setSelectedId(id);
@@ -288,12 +304,13 @@ export default function App() {
 
   return (
     <div className="app">
+      <a className="lab-skip" href="#workspace">Skip to workspace</a>
       {/* Mobile hamburger */}
-      <button className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
+      <button ref={hamburgerRef} className="hamburger" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar" aria-expanded={sidebarOpen} aria-controls="circuit-sidebar">
         {sidebarOpen ? '✕' : '☰'}
       </button>
 
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+      <aside id="circuit-sidebar" aria-label="Circuit navigation" className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <button className="sidebar-brand" onClick={() => setMode(null)} title="Go to homepage">
             <div className="sidebar-logo">F1</div>
@@ -343,6 +360,7 @@ export default function App() {
         <input
           ref={searchRef}
           className="search"
+          aria-label="Search circuits or cities"
           type="text"
           placeholder="Search circuits or cities…"
           value={query}
@@ -350,10 +368,10 @@ export default function App() {
         />
 
         <div className="sidebar-filters">
-          <select value={filterContinent} onChange={e => setFilterContinent(e.target.value)}>
+          <select aria-label="Filter by continent" value={filterContinent} onChange={e => setFilterContinent(e.target.value)}>
             {CONTINENTS.map(c => <option key={c} value={c}>{c === 'All' ? 'All continents' : c}</option>)}
           </select>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <select aria-label="Sort circuits" value={sortBy} onChange={e => setSortBy(e.target.value)}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
@@ -363,11 +381,12 @@ export default function App() {
           <button className={unit === 'imperial' ? 'active' : ''} onClick={() => setUnit('imperial')}>mi / ft</button>
         </div>
 
-        <div className="sidebar-list-header">Circuits · {filtered.length}</div>
+        <div className="sidebar-list-header" role="status">Circuits · {filtered.length}</div>
+        {filtered.length === 0 && <div className="lab-search-empty"><strong>No matching circuits</strong><p>Try another circuit, city, or continent.</p><button onClick={() => {setQuery(''); setFilterContinent('All'); searchRef.current?.focus();}}>Clear filters</button></div>}
         <ul className="circuit-list">
           {filtered.map(c => (
             <li key={c.id}>
-              <button className={c.id === selectedId ? 'active' : ''} onClick={() => selectCircuit(c.id)}>
+              <button aria-pressed={c.id === selectedId} className={c.id === selectedId ? 'active' : ''} onClick={() => selectCircuit(c.id)}>
                 <span className="circuit-name">{c.name}</span>
                 <span className="circuit-location">{c.location}{sortBy === 'continent' ? ` · ${c.continent}` : ''}</span>
               </button>
@@ -391,7 +410,7 @@ export default function App() {
         onClose={() => setCmdOpen(false)}
       />
 
-      <main className="map-area">
+      <main id="workspace" tabIndex={-1} className="map-area">
         {mode !== 'map' && (
         <a
           href="https://nextjs-app-yashyegare.vercel.app/#predict"

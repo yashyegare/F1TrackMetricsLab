@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { useStore } from '../store';
 
 // Mock Leaflet to avoid real map tile requests in tests
 vi.mock('react-leaflet', () => ({
@@ -22,6 +23,7 @@ vi.mock('@react-three/fiber', () => ({
 
 describe('App', () => {
   beforeEach(() => {
+    useStore.setState({mode:null, selectedId:null, compareId:null, query:'', filterContinent:'All', cmdOpen:false, sidebarOpen:false});
     try { localStorage.clear(); } catch { Object.keys(localStorage).forEach(k => localStorage.removeItem(k)); }
   });
 
@@ -29,6 +31,23 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByText(/F1 Track/)).toBeInTheDocument();
     expect(screen.getByText('Home')).toBeInTheDocument();
+  });
+
+  test('opens the selected circuit rather than resetting to Austin', async () => {
+    useStore.setState({selectedId:'mc-1929'});
+    render(<App />);
+    await userEvent.click(screen.getByRole('button', {name:'Explore circuit', exact:true}));
+    expect(useStore.getState().selectedId).toBe('mc-1929');
+    expect(screen.getByTestId('map-container')).toBeInTheDocument();
+  });
+
+  test('recovers from empty circuit searches with clear filters', async () => {
+    render(<App />);
+    await userEvent.type(screen.getByRole('textbox', {name:'Search circuits or cities'}), 'no-matching-circuit');
+    expect(screen.getByText('No matching circuits')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name:'Clear filters'}));
+    expect(screen.getByText('Albert Park Circuit')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', {name:'Search circuits or cities'})).toHaveValue('');
   });
 
   test('renders sidebar with circuit list', async () => {

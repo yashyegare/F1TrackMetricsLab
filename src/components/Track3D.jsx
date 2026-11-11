@@ -572,15 +572,16 @@ export default function Track3D({
     const el = externalCanvasRef?.current;
     if (!el || !onContextLost) return;
     // Wait a tick for the R3F Canvas to mount its <canvas> element
+    let removeListener = () => {};
     const timer = setTimeout(() => {
       const canvas = el.querySelector('canvas');
       if (!canvas) return;
       const handler = () => onContextLost();
       canvas.addEventListener('webglcontextlost', handler, { once: true });
       // Cleanup: remove listener if component unmounts before context loss
-      return () => canvas.removeEventListener('webglcontextlost', handler);
+      removeListener = () => canvas.removeEventListener('webglcontextlost', handler);
     }, 500);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); removeListener(); };
   }, [externalCanvasRef, onContextLost]);
 
   const camera = useMemo(() => {

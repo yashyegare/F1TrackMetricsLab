@@ -542,12 +542,14 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         <div className="compare3d-mode-toggle">
           <button
             className={viewMode === 'sidebyside' ? 'active' : ''}
+            aria-pressed={viewMode === 'sidebyside'}
             onClick={() => setViewMode('sidebyside')}
           >
             Side by Side
           </button>
           <button
             className={viewMode === 'overlay' ? 'active' : ''}
+            aria-pressed={viewMode === 'overlay'}
             onClick={() => setViewMode('overlay')}
           >
             Overlay
@@ -562,7 +564,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
             <button className={`anim-btn${animSpeed === 1 ? ' active' : ''}`} onClick={() => { setAnimSpeed(1); setAnimPaused(false); }}>1×</button>
             <button className={`anim-btn${animSpeed === 2 ? ' active' : ''}`} onClick={() => { setAnimSpeed(2); setAnimPaused(false); }}>2×</button>
             {animSpeed > 0 && (
-              <button className="anim-btn" onClick={() => setAnimPaused(p => !p)}>
+              <button className="anim-btn" aria-label={animPaused ? 'Resume lap animation' : 'Pause lap animation'} onClick={() => setAnimPaused(p => !p)}>
                 {animPaused ? '▶' : '⏸'}
               </button>
             )}
@@ -573,6 +575,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           <div className="anim-controls telemetry-controls">
             <button
               className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
+              aria-pressed={telemetryMode}
               onClick={() => setTelemetryMode(t => !t)}
               title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
             >
@@ -581,6 +584,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
             {telemetryMode && (
               <select
                 className="telemetry-year-select"
+                aria-label="Telemetry session year"
                 value={telemetryYear}
                 onChange={e => {
                   const y = Number(e.target.value);
