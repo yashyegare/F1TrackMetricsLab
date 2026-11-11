@@ -311,7 +311,9 @@ export default function App() {
         {sidebarOpen ? '✕' : '☰'}
       </button>
 
-      <aside id="circuit-sidebar" aria-label="Circuit navigation" className={`sidebar${sidebarOpen ? ' open' : ''}`}>
+      <aside id="circuit-sidebar" aria-label="Circuit navigation" className={`sidebar${sidebarOpen ? ' open' : ''}`} onTransitionEnd={event => {
+        if (event.target === event.currentTarget && event.propertyName === 'transform' && sidebarOpen && window.innerWidth <= 768) searchRef.current?.focus();
+      }}>
         <div className="sidebar-header">
           <button className="sidebar-brand" onClick={() => setMode(null)} title="Go to homepage">
             <div className="sidebar-logo">F1</div>
