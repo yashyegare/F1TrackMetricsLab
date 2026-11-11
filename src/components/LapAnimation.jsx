@@ -86,10 +86,10 @@ export default function LapAnimation({ positions }) {
 
       <div className="lap-controls">
         <div className="lap-controls-main">
-          <button className="lap-btn play-btn" onClick={handleTogglePlay} title={isPlaying ? 'Pause' : 'Play lap'}>
+          <button className="lap-btn play-btn" onClick={handleTogglePlay} aria-label={isPlaying ? 'Pause lap' : 'Play lap'} title={isPlaying ? 'Pause' : 'Play lap'}>
             {isPlaying ? '⏸' : '▶'}
           </button>
-          <button className="lap-btn" onClick={handleReset} title="Reset">
+          <button className="lap-btn" onClick={handleReset} aria-label="Reset lap" title="Reset">
             ⟲
           </button>
 
@@ -97,6 +97,7 @@ export default function LapAnimation({ positions }) {
             <input
               className="lap-scrub"
               type="range"
+              aria-label="Lap progress"
               min={0}
               max={1000}
               value={Math.round(progress * 1000)}
@@ -117,6 +118,7 @@ export default function LapAnimation({ positions }) {
                 key={s}
                 className={`speed-btn ${s === speed ? 'active' : ''}`}
                 onClick={() => setSpeed(s)}
+                aria-pressed={s === speed}
               >
                 {s}×
               </button>

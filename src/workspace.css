@@ -38,6 +38,15 @@ button:active:not(:disabled) { transform:translateY(1px); }
 .lab-search-empty p { color:var(--muted); line-height:1.6; }
 .lab-search-empty button { background:#34445e; color:white; border:1px solid #65758e; border-radius:5px; padding:10px 14px; min-height:42px; cursor:pointer; }
 .map-area { min-width:0; height:100dvh; overflow:hidden; background:#0c121b; }
+.basemap-toggle { left:64px; top:14px; background:#151d29; border-color:var(--stroke); border-radius:8px; }
+.basemap-toggle button { min-height:36px; font-size:13px; color:#b6c5d9; border-radius:5px; }
+.basemap-toggle button.active { background:#34445c; color:white; }
+.lap-controls { background:#151d29f5; border-color:var(--stroke); border-radius:9px; }
+.lap-btn { width:40px; height:40px; }
+.lap-pct,.lap-distance { font-size:12px; color:#c2d0e3; }
+.speed-btn { min-height:32px; color:#b6c5d9; font-size:12px; border-color:#42516a; }
+.speed-btn.active { background:#34445c; color:white; border-color:#7f94b3; }
+.lap-scrub:focus-visible { opacity:1; }
 .prediction-pill { top:16px; right:20px; border-radius:6px; background:#1b2739; border-color:#4b607d; box-shadow:none; min-height:40px; animation:none; }
 .prediction-pill:hover { transform:translateY(-1px); background:#283a53; }
 .prediction-pill-label { font-size:12px; }
@@ -116,5 +125,7 @@ button:active:not(:disabled) { transform:translateY(1px); }
   .compare3d-toolbar button,.basemap-toggle button { min-height:44px; }
   .prediction-pill { right:12px; top:12px; }
   .info-panel { top:64px; max-width:min(290px,calc(100vw - 24px)); }
+  .leaflet-top.leaflet-left { top:68px; }
+  .basemap-toggle { left:68px; top:12px; }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; } }

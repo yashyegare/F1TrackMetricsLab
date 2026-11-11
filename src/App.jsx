@@ -228,7 +228,8 @@ export default function App() {
   const selectCircuit = useStore(s => s.selectCircuit);
   useEffect(() => {
     if (!sidebarOpen || window.innerWidth > 768) return;
-    searchRef.current?.focus();
+    // Wait until the drawer's visible styles have been applied before focusing.
+    const focusFrame = requestAnimationFrame(() => searchRef.current?.focus());
     const trap = event => {
       if (event.key !== 'Tab') return;
       const items = [...document.querySelectorAll('#circuit-sidebar button:not(:disabled), #circuit-sidebar input, #circuit-sidebar select')];
@@ -238,7 +239,7 @@ export default function App() {
     };
     const resize = () => { if (window.innerWidth > 768) setSidebarOpen(false); };
     window.addEventListener('keydown', trap); window.addEventListener('resize', resize);
-    return () => { window.removeEventListener('keydown', trap); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(focusFrame); window.removeEventListener('keydown', trap); window.removeEventListener('resize', resize); };
   }, [sidebarOpen, setSidebarOpen]);
 
   // Derived state
