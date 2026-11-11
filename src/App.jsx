@@ -406,7 +406,7 @@ export default function App() {
             <path d="M3 6l7 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             <circle cx="10" cy="8" r="1.5" fill="currentColor"/>
           </svg>
-          <span className="prediction-pill-label">Predict this race</span>
+          <span className="prediction-pill-label">Race predictor</span>
           <span className="prediction-pill-arrow">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path d="M3 9L9 3M9 3H4.5M9 3V7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
