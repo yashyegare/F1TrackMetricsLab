@@ -36,7 +36,7 @@ describe('App', () => {
   test('opens the selected circuit rather than resetting to Austin', async () => {
     useStore.setState({selectedId:'mc-1929'});
     render(<App />);
-    await userEvent.click(screen.getByRole('button', {name:'Explore circuit', exact:true}));
+    await userEvent.click(screen.getByRole('button', {name:'Explore Tracks →', exact:true}));
     expect(useStore.getState().selectedId).toBe('mc-1929');
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
   });
@@ -101,3 +101,4 @@ describe('App', () => {
     expect(screen.getByText('mi / ft')).toBeInTheDocument();
   });
 });
+

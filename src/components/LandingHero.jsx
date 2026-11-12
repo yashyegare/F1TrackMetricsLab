@@ -2,35 +2,147 @@ import React from 'react';
 import { useStore } from '../store';
 import circuits from '../data/circuits.json';
 
-function Outline({ circuit }) {
-  const latitude = circuit.lat * Math.PI / 180;
-  const points = circuit.coordinates.map(([x, y]) => [x * Math.cos(latitude), -y]);
-  const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
-  const minX = Math.min(...xs), minY = Math.min(...ys);
-  const width = Math.max(...xs) - minX, height = Math.max(...ys) - minY;
-  const scale = Math.min(260 / (width || 1), 140 / (height || 1));
-  const path = points.map(([x,y]) => `${30 + (260 - width * scale) / 2 + (x-minX)*scale},${20 + (140-height*scale)/2 + (y-minY)*scale}`).join(' ');
-  return <svg viewBox="0 0 320 180" aria-hidden="true"><polyline points={path} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
+const features = [
+  { icon: '🗺️', title: 'Interactive Map', desc: 'Leaflet-powered map with animated lap marker, street/satellite toggle, and circuit info panel', color: '#e10600' },
+  { icon: '🎮', title: '3D Track Visualization', desc: 'WebGL ribbon with elevation banking, corner markers, orbit controls, and cinematic camera transitions', color: '#00a3ff' },
+  { icon: '⚡', title: 'Real Telemetry', desc: 'Historical qualifying data from OpenF1 — speed-colored ribbons, variable-speed car dots, and driver head-to-head', color: '#ffcc00' },
+  { icon: '📊', title: 'Telemetry Scrubber', desc: 'MoTeC-style 5-lane trace stack: speed, time delta, throttle/brake, gear/DRS, and RPM', color: '#00cc44' },
+  { icon: '🏁', title: 'Race Context', desc: 'Tire strategy strips, pit stop durations, race control flags, and sector-by-sector comparisons', color: '#ff6b00' },
+  { icon: '🔗', title: 'Deep Links & Sharing', desc: 'Shareable URLs preserve full state — circuit, mode, drivers, telemetry year. Branded PNG export cards', color: '#a855f7' },
+];
+
+const stats = [
+  { value: String(circuits.length), label: 'Circuits' },
+  { value: '24', label: 'Countries' },
+  { value: '2023+', label: 'Telemetry' },
+  { value: '3', label: 'View Modes' },
+];
+
+const techStack = [
+  { name: 'React', desc: 'UI framework' },
+  { name: 'Three.js', desc: '3D rendering' },
+  { name: 'Leaflet', desc: 'Map tiles' },
+  { name: 'Recharts', desc: 'Data charts' },
+  { name: 'Zustand', desc: 'State mgmt' },
+  { name: 'OpenF1', desc: 'Telemetry' },
+];
+
+const shortcuts = [
+  { keys: '⌘ K', action: 'Command palette' },
+  { keys: '/', action: 'Search' },
+  { keys: '← →', action: 'Navigate' },
+  { keys: '1 2 3', action: 'View mode' },
+];
 
 export default function LandingHero() {
-  const selectedId = useStore(s => s.selectedId);
-  const setSelectedId = useStore(s => s.setSelectedId);
-  const setCompareId = useStore(s => s.setCompareId);
-  const compareId = useStore(s => s.compareId);
   const setMode = useStore(s => s.setMode);
-  const selected = circuits.find(c => c.id === selectedId) ?? circuits.find(c => c.id === 'us-2012') ?? circuits[0];
-  const open = (mode, circuit = selected) => {
-    setSelectedId(circuit.id);
-    if (!compareId || compareId === circuit.id) setCompareId(circuits.find(c => c.id !== circuit.id).id);
+  const setSelectedId = useStore(s => s.setSelectedId);
+  const selectedId = useStore(s => s.selectedId);
+  const compareId = useStore(s => s.compareId);
+  const setCompareId = useStore(s => s.setCompareId);
+  const open = (mode) => {
+    const selected = circuits.find(c => c.id === selectedId) || circuits.find(c => c.id === 'us-2012') || circuits[0];
+    setSelectedId(selected.id);
+    if (!compareId || compareId === selected.id) setCompareId(circuits.find(c => c.id !== selected.id).id);
     setMode(mode);
   };
-  return <div className="landing-hero"><div className="landing-content">
-    <section className="lab-introduction"><div><p className="landing-badge">THE CIRCUIT WORKSPACE</p><h1 className="landing-title">F1 Track Metrics Lab</h1><p className="landing-subtitle">Understand the layout.<br />Find where the difference is made.</p><p className="lab-landing-copy">Explore circuit maps, compare track shapes, and examine historical qualifying telemetry. Start with a circuit; go deeper when you need to.</p><div className="landing-actions"><button className="landing-btn primary" onClick={() => open('map')}>Explore circuit <span aria-hidden="true">→</span></button><button className="landing-btn secondary" onClick={() => open('compare3d')}>Compare in 3D</button></div><p className="lab-landing-hint">Search the circuit list or press Ctrl / ⌘ K to jump anywhere.</p></div>
-    <aside className="lab-selected-preview" aria-label={selected.name}><div className="lab-preview-label">YOUR SELECTED CIRCUIT</div><Outline circuit={selected} /><h2>{selected.location}</h2><p>{(selected.length / 1000).toFixed(3)} km · Selected circuit</p><button onClick={() => open('map')}>Open circuit map ↗</button></aside></section>
-    <div className="lab-capabilities"><span><strong>{circuits.length}</strong> circuits to explore</span><span>Map · 2D comparison · 3D view</span><span>Historical telemetry from 2023</span></div>
-    <section className="lab-ways"><p className="landing-badge">CHOOSE YOUR VIEW</p><div className="lab-view-options"><button onClick={() => open('map')}><span>01 / MAP</span><strong>Get your bearings</strong><p>Layout, location, and circuit history.</p></button><button onClick={() => open('compare')}><span>02 / COMPARE</span><strong>See the differences</strong><p>Two track outlines and their key statistics.</p></button><button onClick={() => open('compare3d')}><span>03 / 3D & TELEMETRY</span><strong>Explore in depth</strong><p>Interactive layouts and available driver traces.</p></button></div></section>
-    <section className="lab-featured"><h2>Start somewhere iconic.</h2><div>{['mc-1929','gb-1948','jp-1962'].map(id => { const circuit = circuits.find(c => c.id === id); return <button key={id} onClick={() => open('map', circuit)}><Outline circuit={circuit} /><strong>{circuit.location}</strong><span>{(circuit.length/1000).toFixed(3)} km <span aria-hidden="true">↗</span></span></button>; })}</div></section>
-    <footer className="landing-footer"><p>Telemetry availability depends on the circuit and session. Track geometry and inferred visual details are not a driving simulator.</p><div className="landing-footer-links"><a href="https://nextjs-app-yashyegare.vercel.app/">Race Lab ↗</a><a href="https://github.com/yashyegare/F1TrackMetricsLab">Project & source</a><a href="https://openf1.org">OpenF1</a><a href="https://github.com/bacinger/f1-circuits">Circuit data</a></div><p className="landing-disclaimer">Unofficial fan project. Not associated with the Formula 1 companies.</p></footer>
-  </div></div>;
+
+  return (
+    <div className="landing-hero">
+      <div className="landing-content">
+        {/* Hero */}
+        <div className="landing-hero-section">
+          <div className="landing-badge">UNOFFICIAL F1 TRACK EXPLORER</div>
+          <h1 className="landing-title">
+            F1 Track <span className="landing-accent">Metrics</span> Lab
+          </h1>
+          <p className="landing-subtitle">
+            Interactive circuit explorer with 3D visualization, real telemetry comparison,
+            and head-to-head driver analysis across every modern F1 track.
+          </p>
+
+          <div className="landing-actions">
+            <button className="landing-btn primary" onClick={() => open('map')}>
+              Explore Tracks →
+            </button>
+            <button className="landing-btn secondary" onClick={() => open('compare3d')}>
+              3D Compare
+            </button>
+            <button className="landing-btn ghost" onClick={() => open('compare')}>
+              2D Compare
+            </button>
+          </div>
+        </div>
+
+        {/* Stats bar */}
+        <div className="landing-stats">
+          {stats.map((s, i) => (
+            <div key={i} className="landing-stat">
+              <span className="landing-stat-value">{s.value}</span>
+              <span className="landing-stat-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Features */}
+        <div className="landing-section">
+          <h2 className="landing-section-title">Everything you need to explore F1 tracks</h2>
+          <div className="landing-features">
+            {features.map((f, i) => (
+              <div key={i} className="landing-feature" style={{ '--accent': f.color }}>
+                <div className="landing-feature-icon-wrap" style={{ background: `${f.color}15`, borderColor: `${f.color}30` }}>
+                  <span className="landing-feature-icon">{f.icon}</span>
+                </div>
+                <div className="landing-feature-body">
+                  <h3 className="landing-feature-title">{f.title}</h3>
+                  <p className="landing-feature-desc">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tech stack */}
+        <div className="landing-section">
+          <h2 className="landing-section-title">Built with</h2>
+          <div className="landing-tech">
+            {techStack.map((t, i) => (
+              <div key={i} className="landing-tech-item">
+                <span className="landing-tech-name">{t.name}</span>
+                <span className="landing-tech-desc">{t.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Keyboard shortcuts */}
+        <div className="landing-section">
+          <h2 className="landing-section-title">Keyboard shortcuts</h2>
+          <div className="landing-shortcuts">
+            {shortcuts.map((s, i) => (
+              <div key={i} className="landing-shortcut">
+                <kbd className="landing-kbd">{s.keys}</kbd>
+                <span className="landing-shortcut-action">{s.action}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="landing-footer">
+          <div className="landing-footer-links">
+            <a href="https://github.com/yashyegare/F1TrackMetricsLab" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <span className="landing-footer-dot">·</span>
+            <a href="https://openf1.org" target="_blank" rel="noopener noreferrer">OpenF1 API</a>
+            <span className="landing-footer-dot">·</span>
+            <a href="https://github.com/bacinger/f1-circuits" target="_blank" rel="noopener noreferrer">Track Data</a>
+          </div>
+          <p className="landing-disclaimer">
+            Unofficial project, not associated with Formula 1 companies.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
+
