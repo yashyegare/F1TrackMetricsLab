@@ -145,7 +145,9 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
   const lapStart = Date.parse(lapInfo.date_start);
   const lapEnd = lapStart + lapInfo.lap_duration * 1000;
   if (!Number.isFinite(lapStart) || !Number.isFinite(lapEnd) || lapEnd <= lapStart) throw new Error('Invalid lap timing.');
-  const range = { 'date>=':new Date(lapStart).toISOString(), 'date<=':new Date(lapEnd).toISOString() };
+  // URLSearchParams supplies the '=' delimiter. Including it in the key
+  // changes OpenF1's filter field and yields an empty result.
+  const range = { 'date>':new Date(lapStart).toISOString(), 'date<':new Date(lapEnd).toISOString() };
   const [locationRaw, carDataRaw] = await Promise.all([
     getLocation(sessionKey,driverNumber,range,signal),
     getCarData(sessionKey,driverNumber,range,signal),

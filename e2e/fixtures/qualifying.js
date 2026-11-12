@@ -4,6 +4,9 @@ export async function mockQualifying(page,{missing=false} = {}) {
   await page.route('https://api.openf1.org/v1/**',async route => {
     const url=new URL(route.request().url());
     const endpoint=url.pathname.split('/').pop();
+    if (['location','car_data'].includes(endpoint) && (!url.searchParams.has('date>') || !url.searchParams.has('date<') || url.searchParams.has('date>='))) {
+      await route.fulfill({status:404,json:{detail:'Invalid lap-window filter keys'}});return;
+    }
     const start='2024-01-01T12:00:00.000Z';
     const laps=[{driver_number:1,lap_number:1,lap_duration:90,date_start:start,duration_sector_1:30,duration_sector_2:30,duration_sector_3:30},{driver_number:2,lap_number:2,lap_duration:91,date_start:start,duration_sector_1:30.2,duration_sector_2:30.7,duration_sector_3:30.1}];
     const driver=Number(url.searchParams.get('driver_number')) || 1;

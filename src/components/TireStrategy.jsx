@@ -43,6 +43,7 @@ export default function TireStrategy({ stints, pitStops, totalLaps, driverNumber
         <span className="tire-strategy-title">🏁 Tire Strategy</span>
         {driverName && <span className="tire-strategy-driver">{driverName}</span>}
       </div>
+      {totalLaps == null && <p className="lab-analysis-help">Race lap count unavailable; this strip shows only the recorded stint extent.</p>}
       <div className="tire-strategy-strip">
         {driverStints.map((stint, i) => {
           const laps = stint.end - stint.start + 1;

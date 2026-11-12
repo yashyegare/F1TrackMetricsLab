@@ -27,7 +27,7 @@ describe('session and timing integrity',() => {
     vi.mocked(fetchAPI).mockImplementation(async endpoint => endpoint==='location' ? dates.map((date,i) => ({date,x:i+1,y:2})) : dates.map(date => ({date,speed:100,throttle:80,brake:0,drs:8,n_gear:5,rpm:10000})));
     const result=await getLapTelemetry('us-2012',2024,10,1,{date_start:dates[0],lap_duration:1,lap_number:1});
     expect(result.telemetry).toHaveLength(2);
-    expect(fetchAPI).toHaveBeenCalledWith('location',expect.objectContaining({'date>=':'2024-01-01T00:00:00.000Z','date<=':'2024-01-01T00:00:01.000Z',driver_number:1}),undefined);
+    expect(fetchAPI).toHaveBeenCalledWith('location',expect.objectContaining({'date>':'2024-01-01T00:00:00.000Z','date<':'2024-01-01T00:00:01.000Z',driver_number:1}),undefined);
   });
   it('rejects timing comparisons across circuits, sessions or the same driver',() => {
     const a={session:{key:1,circuit:'Austin',year:2024},lap:{driver:1,driverName:'One',duration:90,sector1:30,sector2:30,sector3:30}};
