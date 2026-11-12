@@ -1,0 +1,126 @@
+{
+  "source": "https://api.openf1.org/v1",
+  "capturedAt": "2026-11-12T05:21:28.880Z",
+  "note": "Public recorded API sample. Session 9159 is used for schema contracts, not qualifying comparison.",
+  "sessions": [
+    {
+      "session_key": 9159,
+      "session_type": "Practice",
+      "session_name": "Practice 2",
+      "date_start": "2023-09-15T13:00:00+00:00",
+      "date_end": "2023-09-15T14:00:00+00:00",
+      "meeting_key": 1219,
+      "circuit_key": 61,
+      "circuit_short_name": "Singapore",
+      "country_key": 157,
+      "country_code": "SGP",
+      "country_name": "Singapore",
+      "location": "Marina Bay",
+      "gmt_offset": "08:00:00",
+      "year": 2023,
+      "is_cancelled": false
+    }
+  ],
+  "drivers": [
+    {
+      "meeting_key": 1219,
+      "session_key": 9159,
+      "driver_number": 55,
+      "broadcast_name": "C SAINZ",
+      "full_name": "Carlos SAINZ",
+      "name_acronym": "SAI",
+      "team_name": "Ferrari",
+      "team_colour": "F91536",
+      "first_name": "Carlos",
+      "last_name": "Sainz",
+      "headshot_url": "https://www.formula1.com/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png.transform/1col/image.png",
+      "country_code": "ESP"
+    }
+  ],
+  "car_data": [
+    {
+      "date": "2023-09-15T13:08:19.243000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 310,
+      "drs": 12,
+      "throttle": 99,
+      "brake": 0,
+      "rpm": 10996
+    },
+    {
+      "date": "2023-09-15T13:08:19.523000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 313,
+      "drs": 12,
+      "throttle": 99,
+      "brake": 0,
+      "rpm": 11117
+    },
+    {
+      "date": "2023-09-15T13:08:19.923000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 315,
+      "drs": 12,
+      "throttle": 99,
+      "brake": 0,
+      "rpm": 11141
+    },
+    {
+      "date": "2023-09-15T13:08:20.243000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 308,
+      "drs": 12,
+      "throttle": 10,
+      "brake": 100,
+      "rpm": 10732
+    },
+    {
+      "date": "2023-09-15T13:08:20.563000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 266,
+      "drs": 8,
+      "throttle": 3,
+      "brake": 100,
+      "rpm": 9369
+    },
+    {
+      "date": "2023-09-15T13:08:20.763000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 266,
+      "drs": 8,
+      "throttle": 3,
+      "brake": 100,
+      "rpm": 9162
+    },
+    {
+      "date": "2023-09-15T13:08:20.923000+00:00",
+      "session_key": 9159,
+      "meeting_key": 1219,
+      "driver_number": 55,
+      "n_gear": 8,
+      "speed": 209,
+      "drs": 8,
+      "throttle": 0,
+      "brake": 100,
+      "rpm": 8322
+    }
+  ]
+}

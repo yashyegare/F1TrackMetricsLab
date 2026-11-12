@@ -8,7 +8,7 @@ import { calculateTimeDelta, prepareTraceStack } from '../utils/telemetryAnalysi
 const CAR_A_COLOR = '#e10600';
 const CAR_B_COLOR = '#00a3ff';
 
-function CustomTooltip({ active, payload, label }) {
+function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   return (
     <div className="scrubber-tooltip">
@@ -34,7 +34,7 @@ function CustomTooltip({ active, payload, label }) {
  * Collapsible: hidden by default, shown when expanded.
  * Bidirectional: hovering the chart snaps the 3D CarDot to that position.
  */
-export default function TelemetryScrubber({ primaryProjected, secondaryProjected, sharedProgressRef, primaryName, secondaryName }) {
+export default function TelemetryScrubber({ primaryProjected, secondaryProjected, sharedProgressRef, primaryName, secondaryName, comparable = false }) {
   const [expanded, setExpanded] = useState(false);
   const resolution = 500;
   const hoverProgressRef = useRef(null);
@@ -46,9 +46,9 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
     const { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace } = prepareTraceStack(
       primaryProjected, secondaryProjected, resolution
     );
-    const deltaTrace = calculateTimeDelta(primaryProjected, secondaryProjected, resolution);
+    const deltaTrace = comparable ? calculateTimeDelta(primaryProjected, secondaryProjected, resolution) : [];
     return { speedTrace, throttleBrakeTrace, gearTrace, rpmTrace, deltaTrace };
-  }, [primaryProjected, secondaryProjected]);
+  }, [primaryProjected, secondaryProjected, comparable]);
 
   // Bidirectional scrub: chart hover → 3D CarDot
   const handleScrub = useCallback((e) => {
@@ -60,6 +60,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
       hoverProgressRef.current = progress;
     }
   }, [sharedProgressRef]);
+  const handleLeave = () => { if (sharedProgressRef) sharedProgressRef.current.active=false; };
 
   if (!primaryProjected?.length && !secondaryProjected?.length) return null;
 
@@ -69,7 +70,8 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
     <div className="telemetry-scrubber">
       <button
         className="scrubber-toggle"
-        onClick={() => setExpanded(e => !e)}
+        onClick={() => { handleLeave(); setExpanded(e => !e); }}
+        aria-expanded={expanded}
       >
         <span style={{ fontSize: 14 }}>{expanded ? '▾' : '▸'}</span>
         <span>{expanded ? 'Hide Telemetry Traces' : 'Show Telemetry Traces'}</span>
@@ -88,7 +90,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={() => {}} syncId="telemetrySync">
+              <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} unit=" km/h" />
@@ -110,7 +112,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
                 </span>
               </div>
               <ResponsiveContainer width="100%" height={90}>
-                <AreaChart data={deltaTrace} onMouseMove={handleScrub} syncId="telemetrySync">
+                <AreaChart data={deltaTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                   <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                   <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                   <YAxis tick={tickStyle} width={40} unit="s" domain={['auto', 'auto']} />
@@ -145,7 +147,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={110}>
-              <AreaChart data={throttleBrakeTrace} onMouseMove={handleScrub} syncId="telemetrySync">
+              <AreaChart data={throttleBrakeTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 100]} />
@@ -169,7 +171,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={90}>
-              <LineChart data={gearTrace} onMouseMove={handleScrub} syncId="telemetrySync">
+              <LineChart data={gearTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 8]} />
@@ -192,7 +194,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               </span>
             </div>
             <ResponsiveContainer width="100%" height={90}>
-              <LineChart data={rpmTrace} onMouseMove={handleScrub} syncId="telemetrySync">
+              <LineChart data={rpmTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
                 <YAxis tick={tickStyle} width={40} domain={[0, 15000]} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />

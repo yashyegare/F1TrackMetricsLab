@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useCallback, useEffect, useState } from 'react';
+import { useGraphicsQuality } from '../hooks/useGraphicsQuality';
+import React, { useMemo, useRef, useCallback, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, Line, Grid, ContactShadows, Billboard, Text } from '@react-three/drei';
 // postprocessing deferred — peer dep conflicts with current R3F version
@@ -151,7 +152,7 @@ function StartFinishGantry({ points, trackWidth, poleHeight, checkerTexture }) {
  *      so the dot slows in corners and surges on straights.
  */
 function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
-  telemetryDates, progressValues, lapDuration, sharedProgressRef, instanceId, projectedTelemetry }) {
+  telemetryDates, progressValues, lapDuration, lapDateStart, sharedProgressRef, instanceId, projectedTelemetry }) {
   const groupRef = useRef();
   const progressRef = useRef(Math.random());
   const elapsedRef = useRef(0);
@@ -161,9 +162,9 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
   // Precompute date→ms array for timeline mode
   const timelineMs = useMemo(() => {
     if (!hasTimeline) return null;
-    const t0 = new Date(telemetryDates[0]).getTime();
+    const t0 = new Date(lapDateStart || telemetryDates[0]).getTime();
     return telemetryDates.map(d => new Date(d).getTime() - t0);
-  }, [telemetryDates, hasTimeline]);
+  }, [telemetryDates, hasTimeline, lapDateStart]);
 
   const sphereR = size * 0.45;
   const ringInner = size * 0.3;
@@ -171,7 +172,7 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    if (paused || speed <= 0) {
+    if (speed <= 0 && !sharedProgressRef?.current.active) {
       groupRef.current.visible = false;
       return;
     }
@@ -180,8 +181,13 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
 
     if (hasTimeline && timelineMs) {
       // Variable-speed mode: advance by real elapsed time × speed multiplier
-      elapsedRef.current += dt * speed * 1000; // ms
-      const scaledMs = elapsedRef.current % (lapDuration * 1000);
+      if (!paused) elapsedRef.current += dt * speed * 1000;
+      const shared = sharedProgressRef?.current;
+      let scaledMs;
+      if (shared?.synchronizeTime && shared.cycleMs > 0) {
+        if (isLeader && !paused) shared.elapsed = (shared.elapsed + dt * speed * 1000) % shared.cycleMs;
+        scaledMs = Math.min(shared.elapsed,lapDuration * 1000);
+      } else scaledMs = elapsedRef.current % (lapDuration * 1000);
       // Binary search for the bracketing samples
       let hi = 0;
       const len = timelineMs.length;
@@ -196,21 +202,28 @@ function CarDot({ points, elevation, cumulative, total, speed, paused, size = 1,
         const t1 = timelineMs[hi];
         const seg = t1 - t0 || 1;
         const t = (scaledMs - t0) / seg; // 0..1 interpolation factor
-        progressRef.current = progressValues[hi - 1] + (progressValues[hi] - progressValues[hi - 1]) * t;
+        const from = progressValues[hi-1];
+        let change = progressValues[hi]-from;
+        if (change < -.5) change += 1;
+        if (change > .5) change -= 1;
+        progressRef.current = (from+change*t+1)%1;
       }
     } else {
       // Constant speed mode
-      progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
+      if (!paused) progressRef.current = (progressRef.current + dt * speed * 0.08) % 1;
     }
 
-    // Sync: leader writes to shared, follower reads from shared
-    if (sharedProgressRef) {
-      if (isLeader) {
-        sharedProgressRef.current.progress = progressRef.current;
-        sharedProgressRef.current.active = speed > 0 && !paused;
-      } else if (sharedProgressRef.current.active) {
-        progressRef.current = sharedProgressRef.current.progress;
-      }
+    // Charts scrub by recorded lap distance, separately from the shared clock.
+    if (sharedProgressRef?.current.active && projectedTelemetry?.length) {
+      const target = sharedProgressRef.current.progress;
+      let index = projectedTelemetry.findIndex(point => (point.lapProgress ?? point.progress) >= target);
+      if (index < 0) index = projectedTelemetry.length-1;
+      const end=projectedTelemetry[index],start=projectedTelemetry[Math.max(0,index-1)];
+      const from=start.lapProgress ?? start.progress,to=end.lapProgress ?? end.progress;
+      const ratio=to > from ? (target-from)/(to-from) : 0;
+      let change=end.progress-start.progress;
+      if(change < -.5)change+=1;if(change > .5)change-=1;
+      progressRef.current=(start.progress+change*Math.max(0,Math.min(1,ratio))+1)%1;
     }
 
     const pos = interpolateAlongPath3D(points, elevation, cumulative, total, progressRef.current);
@@ -324,6 +337,7 @@ function TelemetrySpeedLine({ points, elevation, binned, trackWidth }) {
 // --- Track scene -------------------------------------------------------------
 
 function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sharedCameraRef, instanceId, animSpeed, animPaused, onCornerZoom, telemetry, sharedProgressRef }) {
+  const graphics = useGraphicsQuality();
   const { points, corners } = detail;
   const controlsRef = useRef();
   const { camera } = useThree();
@@ -517,6 +531,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         telemetryDates={telemetry?.projected?.map(p => p.date)}
         progressValues={telemetry?.projected?.map(p => p.progress)}
         lapDuration={telemetry?.lap?.duration}
+        lapDateStart={telemetry?.lap?.dateStart}
         sharedProgressRef={sharedProgressRef}
         instanceId={instanceId}
         projectedTelemetry={telemetry?.projected}
@@ -541,12 +556,12 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         fadeStrength={1.2}
         infiniteGrid
       />
-      <ContactShadows position={[0, -0.35, 0]} opacity={0.5} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />
+      {graphics.shadows && <ContactShadows position={[0, -0.35, 0]} opacity={0.5} scale={diag * 2.4} blur={2.2} far={diag * 0.6} />}
 
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
-        autoRotate={!sharedCameraRef?._instanceId}
+        autoRotate={graphics.rotate}
         autoRotateSpeed={0.5}
         minDistance={diag * 0.15}
         maxDistance={diag * 2.4}
@@ -564,8 +579,8 @@ export default function Track3D({
   sharedCameraRef, instanceId, animSpeed = 0, animPaused = false,
   canvasRef: externalCanvasRef, telemetry = null, sharedProgressRef = null, onContextLost,
 }) {
+  const graphics = useGraphicsQuality();
   const { points } = detail;
-  const internalCanvasRef = useRef();
 
   // Listen for WebGL context loss and notify parent ErrorBoundary
   useEffect(() => {
@@ -606,7 +621,7 @@ export default function Track3D({
   return (
     <div className="track3d-canvas-wrap" ref={externalCanvasRef} style={{ height }} role="img" aria-label={`${detail.corners.length}-corner ${detail.direction} track 3D visualization`}>
       <Canvas
-        dpr={[1, 2]}
+        dpr={[1, graphics.maxDpr]}
         gl={{ preserveDrawingBuffer: true }}
         camera={{ position: camera.position, fov: camera.fov, near: camera.near, far: camera.far }}
       >

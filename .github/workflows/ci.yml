@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
   pull_request:
     branches: [main]
 
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        node-version: [22, 24]
 
     steps:
       - uses: actions/checkout@v4
@@ -26,7 +26,13 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npx eslint src/ --max-warnings=50
+        run: npm run lint
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+
+      - name: Typecheck validated domain and service boundaries
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test
@@ -55,6 +61,13 @@ jobs:
 
       - name: Run E2E tests
         run: npx playwright test
+
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-evidence
+          path: test-results/
 
   deploy:
     # Real CI->CD: only main-branch pushes after the full test + e2e gates pass.

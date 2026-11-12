@@ -1,48 +1,20 @@
 import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
-
 export default [
-  js.configs.recommended,
+  {ignores:['dist/','node_modules/']},
+  {...js.configs.recommended,files:['src/**/*.{js,jsx,ts,tsx}']},
   {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        fetch: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        URLSearchParams: 'readonly',
-        URL: 'readonly',
-        performance: 'readonly',
-        requestAnimationFrame: 'readonly',
-        cancelAnimationFrame: 'readonly',
-        navigator: 'readonly',
-        Image: 'readonly',
-        HTMLCanvasElement: 'readonly',
-        WebGLRenderingContext: 'readonly',
-        ClipboardItem: 'readonly',
-        self: 'readonly',
-      },
+    files:['src/**/*.{js,jsx,ts,tsx}'],
+    languageOptions:{
+      parser:tseslint.parser,parserOptions:{ecmaFeatures:{jsx:true}},ecmaVersion:'latest',sourceType:'module',
+      globals:Object.fromEntries(['window','document','console','fetch','setTimeout','clearTimeout','setInterval','clearInterval','localStorage','sessionStorage','URLSearchParams','URL','performance','requestAnimationFrame','cancelAnimationFrame','navigator','Image','HTMLCanvasElement','WebGLRenderingContext','ClipboardItem','self','Worker','AbortController','DOMException','describe','test','it','expect','vi','beforeEach','afterEach'].map(name => [name,'readonly']))
     },
+    plugins:{'react-hooks':reactHooks,'@typescript-eslint':tseslint.plugin},
+    rules:{
+      'react-hooks/rules-of-hooks':'error','react-hooks/exhaustive-deps':'error','no-undef':'error','no-unused-vars':'off',
+      '@typescript-eslint/no-unused-vars':['error',{argsIgnorePattern:'^_',varsIgnorePattern:'^React$',caughtErrorsIgnorePattern:'^_'}]
+    }
   },
-  {
-    plugins: {
-      'react-hooks': reactHooks,
-    },
-    rules: {
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    },
-  },
-  {
-    ignores: ['dist/', 'node_modules/'],
-  },
+  {files:['src/**/*.{ts,tsx}'],rules:{'no-undef':'off'}}
 ];

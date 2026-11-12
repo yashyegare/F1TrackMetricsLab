@@ -6,7 +6,7 @@ const MODE_OPTIONS = [
   { id: 'compare3d', label: '3D View', icon: '🏎️', shortcut: '3' },
 ];
 
-export default function CommandPalette({ circuits, selectedId, compareId, mode, onSelectCircuit, onSetMode, isOpen, onClose }) {
+export default function CommandPalette({ circuits, selectedId, compareId, onSelectCircuit, onSetMode, isOpen, onClose }) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);

@@ -1,190 +1,68 @@
-# 🏎️ F1 Track Metrics Lab
+# F1 Track Metrics Lab
 
-> Interactive Formula 1 circuit explorer with 3D visualization, real telemetry comparison, and head-to-head driver analysis.
+An unofficial circuit explorer and qualifying-lap comparison tool. Built with React, Three.js, Leaflet, Recharts and OpenF1.
 
-[![CI](https://github.com/yashyegare/F1TrackMetricsLab/actions/workflows/ci.yml/badge.svg)](https://github.com/yashyegare/F1TrackMetricsLab/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-40%20passing-brightgreen)](#testing)
-[![License](https://img.shields.io/badge/license-MIT-blue)](#disclaimer)
+[Live application](https://f1-track-metrics-lab.vercel.app/) · [Architecture and engineering decisions](docs/architecture.md) · [Measured performance](docs/performance.md)
 
-**Live Demo →** [f1-track-metrics-lab.vercel.app](https://f1-track-metrics-lab.vercel.app) · **Containerized deploy →** [track-metrics-lab on Cloud Run](https://track-metrics-lab-859763063159.asia-south1.run.app) — [setup & CI/CD notes](docs/cloud-run-setup.md)
+## Start locally
 
-<p align="center">
-  <img src="public/og-image.svg" alt="F1 Track Metrics Lab" width="100%" style="max-width: 800px; border-radius: 12px; margin: 24px 0;" />
-</p>
+Use Node 22.12+ (CI covers Node 22 and 24).
 
----
-
-## 📸 Screenshots
-
-> **Capture locally:** Run `npm run dev`, open http://localhost:5174, and take screenshots of each view.
-> Recommended: use browser dev tools to set viewport to 1280×800 for consistent sizing.
-
-| View | What to capture |
-|------|-----------------|
-| 🗺️ **Map View** | Select any circuit → click Map. Shows the track drawn on Leaflet with animated lap marker, circuit info panel, and DRS zone indicators |
-| 📊 **2D Compare** | Select two circuits → click Compare. Side-by-side SVG outlines with full stat comparison |
-| 🎮 **3D Side-by-Side** | Select two circuits → click 3D View. Interactive WebGL scenes with road ribbon, corner markers, elevation banking, and synced cameras |
-| 🔮 **3D Overlay** | In 3D View, click the Overlay tab. Both tracks superimposed in one scene, normalized to the same scale for shape comparison |
-| ⚡ **Race Pace** | Toggle the Race Pace button → select drivers. Speed-colored ribbon (blue→red heatmap), variable-speed car dots, driver head-to-head |
-| 📈 **Telemetry Scrubber** | With Race Pace on, expand the Race Data panel. 4-lane synchronized trace stack: speed, time delta, throttle/brake, gear/DRS — MoTeC style |
-
----
-
-## ✨ What It Does
-
-Explore every F1 circuit through three interconnected views — 2D map, flat comparison, and immersive 3D — then overlay **real qualifying telemetry** from OpenF1 to see exactly where drivers gain or lose time.
-
-| View | What You See |
-|------|-------------|
-| 🗺️ **Map** | Track drawn on Leaflet (street/satellite) with animated lap marker and expandable info panel |
-| 📊 **Compare** | Two circuits side-by-side as scaled SVG outlines with full stat comparison |
-| 🎮 **3D View** | Interactive WebGL scenes with road ribbon, corner markers, elevation banking, and orbit controls |
-
----
-
-## 🏁 Features
-
-### 🎯 Three Comparison Modes
-
-- **Side by Side** — Two independent 3D canvases with synced cameras
-- **Overlay** — Both tracks superimposed in one scene, normalized to the same scale
-- **Flat Compare** — Clean 2D SVG comparison with stats
-
-### ⚡ Real Telemetry (Race Pace)
-
-Pull live data from [OpenF1](https://openf1.org) (2023+ circuits only):
-
-- 🎨 **Speed-colored ribbon** — Blue (slow) → Yellow → Red (fast) heatmap on the 3D track
-- 🚗 **Variable-speed car dot** — Slows in corners, surges on straights (real elapsed time)
-- 👥 **Driver picker** — Choose any driver from qualifying to compare head-to-head
-- 📈 **4-lane telemetry scrubber** — Speed trace, time delta, throttle/brake, gear/DRS
-- 🔗 **Bidirectional scrubbing** — Hover the chart → 3D car snaps to that position
-- 📐 **Catmull-Rom smoothing** — Cubic interpolation fills the 3.7Hz sampling gaps
-
-### 🧭 Navigation & UX
-
-- ⌘**K Command Palette** — Search circuits, switch modes instantly
-- 🔍 **Real-time search** — Filter by name, city, or location
-- 🌍 **Filter/sort** — By continent, decade opened, track length, or corner count
-- ⌨️ **Keyboard shortcuts** — Arrow keys step circuits, `/` focuses search
-- 🔗 **Deep links** — `?circuit=monza&mode=compare3d&vs=spa&racePace=1&year=2024`
-- 💾 **State persistence** — Mode, circuits, and preferences survive refresh
-- 📱 **Mobile responsive** — Collapsible drawer sidebar, stacked layouts
-
-### 📊 Circuit Data
-
-- 🏆 **Lap records** — Driver, time, year per circuit
-- 🟢 **DRS zones** — Zone count with color-coded straights in 2D
-- 📅 **Track history** — Years hosted, GP count, layout changes
-- 🔗 **Similar tracks** — Algorithm surfaces comparable circuits by length, shape, and region
-
-### 📤 Export & Share
-
-- 📷 **Screenshot** — Download individual 3D canvases as PNG
-- 🔗 **Share Card** — Branded 1200×630 comparison image for social media
-- 🌐 **Shareable URLs** — Deep links preserve all state including telemetry driver selections
-
-### 🎨 Visual Polish
-
-- 🏷️ **Billboard labels** — Start/finish and corner count rendered in WebGL (no DOM layout shifts)
-- 🎬 **Cinematic camera** — 800ms ease-out transitions between circuits
-- ♿ **Accessibility** — `prefers-reduced-motion`, `focus-visible` outlines, ARIA labels
-
----
-
-## 🏗️ Architecture
-
-```
-React 18 + Vite
-├── Zustand (UI state: mode, selectedId, compareId, unit, filters)
-├── React Three Fiber + Drei (3D rendering)
-├── Leaflet (2D map)
-├── Recharts (telemetry scrubber)
-├── idb-keyval (IndexedDB cache for telemetry)
-└── OpenF1 API (live qualifying telemetry, 2023+)
-```
-
-### Performance
-
-- **Code-split Three.js** — 3D chunks load on demand via `React.lazy()` (~420KB initial)
-- **Ribbon geometry cache** — Session-level `BufferGeometry` cache avoids rebuilding mesh
-- **Projection cache** — Expensive rotation-search alignment cached per circuit+year (LRU, 20 entries)
-- **IndexedDB telemetry cache** — Async, unlimited storage (replaces localStorage)
-
----
-
-## 🧪 Testing
-
-40 tests across 3 suites covering all pure-math utilities:
-
-```bash
-npm test
-```
-
-| Suite | What's Tested |
-|-------|--------------|
-| `geometry.test.js` | Haversine distance, cumulative distances, path interpolation, coordinate projection |
-| `telemetryProject.test.js` | Catmull-Rom interpolation, speed-to-color mapping, telemetry binning |
-| `telemetryAnalysis.test.js` | Time delta calculation, G-force derivation, trace stack preparation |
-
----
-
-## 🚀 Getting Started
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
+```sh
+npm ci
 npm run dev
+```
 
-# Run tests
+Open http://localhost:5174. To validate changes:
+
+```sh
+npm run lint
+npm run typecheck
 npm test
-
-# Build for production
 npm run build
-
-# Preview production build
-npm run preview
+npm run test:e2e
+npm audit --audit-level=moderate
+node scripts/benchmark.mjs
 ```
 
----
+Playwright requires its Chromium browser: `npx playwright install chromium`.
 
-## 📁 Project Structure
+## What to try
 
-```
-src/
-├── App.jsx                     # Main app, sidebar, deep links, keyboard shortcuts
-├── store.js                    # Zustand store (mode, selectedId, filters, etc.)
-├── index.css                   # Dark F1-themed styling
-├── data/
-│   └── circuits.json           # 40 circuits with geometry, metadata, lap records,
-│                               # DRS zones, track history, and continent tags
-├── components/
-│   ├── CommandPalette.jsx      # ⌘K circuit search and mode switching
-│   ├── Compare3DPanel.jsx      # 3D comparison (side-by-side + overlay)
-│   ├── ComparePanel.jsx        # 2D flat comparison
-│   ├── Overlay3DPanel.jsx      # Overlay mode in shared 3D canvas
-│   ├── Track3D.jsx             # Single circuit 3D scene
-│   ├── TelemetryScrubber.jsx   # 4-lane telemetry trace stack
-│   ├── SpeedRibbon.jsx         # Vertex-colored tube mesh
-│   ├── LandingHero.jsx         # Landing page with feature showcase
-│   └── LapAnimation.jsx        # Animated marker on 2D polyline
-└── utils/
-    ├── geometry.js             # Lat/lon projection, path interpolation
-    ├── track3d.js              # Scene coordinates, corner detection
-    ├── telemetryProject.js     # OpenF1 → track alignment via rotation search
-    ├── telemetryAnalysis.js    # Time delta, G-forces, trace preparation
-    ├── openf1.js               # OpenF1 API client with IndexedDB cache
-    ├── ribbonCache.js          # Session-level geometry cache
-    └── drsDetect.js            # DRS zone detection from track geometry
-```
+1. Explore a circuit on the map, save a favorite, or reopen a recent track.
+2. Open **3D View → Compare drivers**. Select the circuit, qualifying year and two different drivers.
+3. Read the recorded lap/sector differences, expand the sampled telemetry traces, and scrub the distance axis.
+4. Play the synchronized side-by-side replay. The clock is shared; each driver follows their own recorded timeline.
+5. Use **Compare tracks** for normalized track geometry. Cross-track replay does not claim to measure driver performance.
 
----
+Example deep link:
 
-## ⚠️ Disclaimer
+`/?circuit=us-2012&mode=compare3d&analysis=drivers&racePace=1&year=2024&driverA=4&driverB=16`
 
-Unofficial project, not associated with the Formula 1 companies. F1, FORMULA ONE, and related marks are trademarks of Formula One Licensing B.V.
+The legacy `racePace` URL flag is retained for existing links; the UI correctly calls the source qualifying telemetry.
 
-Track data: [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT)
-Telemetry: [OpenF1](https://openf1.org) (free, public API)
+## Data provenance and limits
+
+- Circuit outlines and archived metadata: [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits). An archived lap record or DRS count may belong to an earlier season/layout.
+- Recorded telemetry, lap/sector timing and race context: [OpenF1](https://openf1.org/docs/), historical coverage from 2023. Qualifying is never silently replaced with a race or sprint session.
+- Corner counts, straight sections and track direction are inferred from geometry. Green highlights are inferred straights, **not verified DRS locations**.
+- Elevation, banking, road width and object heights are stylized. This is not a driving simulator or engineering survey.
+- Distance traces use sampled location data and interpolation. Their delta is an estimate; the recorded lap and sector times remain the timing reference. Conditions and qualifying runs may differ.
+- Race length is the maximum recorded completed lap in the matching race session. Missing race timing stays unavailable; there is no fixed lap-count fallback.
+- Calendar collection is the **announced 2026 calendar**, with a linked FIA source. It is not a live schedule.
+
+## Reliability and tests
+
+The suite covers geometry, telemetry interpolation, data mapping, session integrity, request cancellation, timeout/retry behavior, cache isolation, schema contracts and production gating. Browser tests cover discovery, mobile layouts, favorites, same-session driver analysis, deep links, missing sessions and cross-track safeguards. Test counts are deliberately not hardcoded into badges; CI is the source of truth.
+
+Recorded public API samples under `src/services/__tests__/fixtures/` test schema compatibility. Browser fixtures under `e2e/fixtures/` are explicitly synthetic and deterministic. Live API availability remains outside the app's control.
+
+## Release process
+
+GitHub CI runs strict linting, TypeScript checks for the domain/service boundaries, the complete dependency audit, unit tests, build and browser tests. Vercel production builds wait for the exact main-branch commit's required checks; unavailable or failed checks stop the release. Preview builds and local builds do not wait for production checks. [Release design](docs/architecture.md#release-safety)
+
+The optional [Cloud Run deployment](docs/cloud-run-setup.md) remains gated by CI. No API key is needed for the historical OpenF1 endpoints used here. Favorites, preferences and recent tracks remain in this browser.
+
+## Ownership and attribution
+
+The repository integrates open-source rendering, mapping, charting and data services; it does not claim to implement their internals. See the architecture notes for application-owned logic, tradeoffs and remaining limitations. This project is not associated with Formula 1, the FIA, or their companies.

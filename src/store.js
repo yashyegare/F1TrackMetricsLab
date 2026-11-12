@@ -36,12 +36,14 @@ export const useStore = create((set, _get) => {
   return {
     // View state
     mode: url.mode || loadState('f1_mode', null),
+    analysisMode: new URLSearchParams(window.location.search).get('analysis') === 'drivers' ? 'drivers' : 'tracks',
     selectedId: selected,
     compareId: validId(comparison) && comparison !== selected ? comparison : circuits.find(c => c.id !== selected).id,
     favoriteIds: cleanIds(loadState('f1_favorites', [])),
     recentIds: cleanIds(loadState('f1_recent', [])),
     collection: 'all',
     unit: loadState('f1_unit', 'metric'),
+    graphicsQuality: ['auto','low','high'].includes(loadState('f1_graphics','auto')) ? loadState('f1_graphics','auto') : 'auto',
     basemap: 'street',
 
     // Sidebar
@@ -55,6 +57,8 @@ export const useStore = create((set, _get) => {
 
     // Actions
     setMode: (mode) => { set({ mode }); saveState('f1_mode', mode); },
+    setAnalysisMode: analysisMode => set({analysisMode}),
+    setGraphicsQuality: graphicsQuality => { if (['auto','low','high'].includes(graphicsQuality)) { set({graphicsQuality}); saveState('f1_graphics',graphicsQuality); } },
     setSelectedId: (id) => { if (!validId(id)) return; set(state => {
       const compareId = state.compareId === id ? state.selectedId : state.compareId;
       saveState('f1_compare', compareId); saveState('f1_selected', id);

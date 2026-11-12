@@ -6,6 +6,7 @@
  */
 
 import { interpolateSample } from './telemetryProject';
+import { isDrsOpen } from './drsStatus';
 
 // ---- Time Delta ----
 
@@ -14,6 +15,7 @@ function appendElapsedTimes(telemetry) {
   const startTime = new Date(telemetry[0].date).getTime();
   return telemetry.map(point => ({
     ...point,
+    progress: point.lapProgress ?? point.progress,
     elapsed: (new Date(point.date).getTime() - startTime) / 1000,
   }));
 }
@@ -104,6 +106,8 @@ export function calculateGForces(telemetry, trackPoints, resolution = 500) {
  * a common progress axis.
  */
 export function prepareTraceStack(primaryProjected, secondaryProjected, resolution = 500) {
+  primaryProjected = primaryProjected?.map(point => ({...point,progress:point.lapProgress ?? point.progress}));
+  secondaryProjected = secondaryProjected?.map(point => ({...point,progress:point.lapProgress ?? point.progress}));
   const speedTrace = [];
   const throttleBrakeTrace = [];
   const gearTrace = [];
@@ -135,8 +139,8 @@ export function prepareTraceStack(primaryProjected, secondaryProjected, resoluti
       distance: Math.round(progress * 100) + '%',
       gearA: p ? p.gear : 1,
       gearB: s ? s.gear : 1,
-      drsA: p ? (p.drs > 0 ? 1 : 0) : 0,
-      drsB: s ? (s.drs > 0 ? 1 : 0) : 0,
+      drsA: p && isDrsOpen(p.drs) ? 1 : 0,
+      drsB: s && isDrsOpen(s.drs) ? 1 : 0,
     });
 
     rpmTrace.push({

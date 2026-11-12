@@ -6,9 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     exclude: ['e2e/**', 'node_modules/**'],
-    environmentMatchGlobs: [
-      ['src/__tests__/**', 'jsdom'],
-    ],
+    environment: 'jsdom',
   },
   server: {
     port: 5174,
@@ -16,9 +14,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'zustand': ['zustand'],
+        manualChunks(id) {
+          if (/node_modules\/(three|@react-three)\//.test(id)) return 'three';
+          if (id.includes('node_modules/zustand/')) return 'zustand';
         },
       },
     },

@@ -15,10 +15,6 @@ const Compare3DPanel = React.lazy(() => import('./components/Compare3DPanel.jsx'
 
 // --- Sort helpers ------------------------------------------------------------
 
-function decadeLabel(opened) {
-  if (!opened) return 'Unknown';
-  return `${Math.floor(opened / 10) * 10}s`;
-}
 
 const SORT_OPTIONS = [
   { value: 'name', label: 'Name' },
@@ -70,7 +66,7 @@ function TrackHistory({ history }) {
   const gapStarts = new Set(gaps.map(g => g.to));
   // In compact mode, only render milestone dots
   const milestoneYears = compact
-    ? hostedYears.filter((y, i) => {
+    ? hostedYears.filter((y) => {
         const isEdge = y === minYear || y === maxYear;
         const isDecade = y % 10 === 0;
         const isGapTarget = gapStarts.has(y);
@@ -161,10 +157,10 @@ function InfoPanel({ circuit, unit, allCircuits, onSelect }) {
             <div><span className="label">Opened</span><span className="value">{circuit.opened ?? '—'}</span></div>
             <div><span className="label">First GP</span><span className="value">{circuit.firstgp ?? '—'}</span></div>
             <div><span className="label">Altitude</span><span className="value">{formatAltitude(circuit.altitude, unit)}</span></div>
-            {circuit.drsZones > 0 && <div><span className="label">DRS Zones</span><span className="value">{circuit.drsZones}</span></div>}
+            {circuit.drsZones > 0 && <div><span className="label">Archived DRS count</span><span className="value">{circuit.drsZones}</span></div>}
             {circuit.lapRecord && (
               <div className="lap-record-row">
-                <span className="label">Lap Record</span>
+                <span className="label">Archived lap record</span>
                 <span className="value lap-record">{circuit.lapRecord.time} <span className="record-driver">{circuit.lapRecord.driver}</span> ({circuit.lapRecord.year})</span>
               </div>
             )}
@@ -206,6 +202,7 @@ export default function App() {
   const hamburgerRef = useRef(null);
   // Zustand store selectors — only re-render when the selected slice changes
   const mode = useStore(s => s.mode);
+  const analysisMode = useStore(s => s.analysisMode);
   const selectedId = useStore(s => s.selectedId);
   const compareId = useStore(s => s.compareId);
   const unit = useStore(s => s.unit);
@@ -252,7 +249,7 @@ export default function App() {
 
   // Derived state
   const selected = useMemo(() => circuits.find(c => c.id === selectedId) || circuits[0] || null, [selectedId]);
-  const compareCircuit = useMemo(() => circuits.find(c => c.id === compareId) || circuits[1] || null, [compareId]);
+  const compareCircuit = useMemo(() => mode === 'compare3d' && analysisMode === 'drivers' ? selected : circuits.find(c => c.id === compareId) || circuits[1] || null, [compareId,mode,analysisMode,selected]);
   const positions = useMemo(() => (selected ? selected.coordinates.map(([lon, lat]) => [lat, lon]) : []), [selected]);
 
   const initialTelemetry = useMemo(() => {
@@ -366,11 +363,11 @@ export default function App() {
             <label>
               <span className="dot" style={{ background: '#00a3ff' }} />
               Circuit B
-              <select value={compareId} onChange={e => setCompareId(e.target.value)}>
+              <select disabled={mode === 'compare3d' && analysisMode === 'drivers'} value={mode === 'compare3d' && analysisMode === 'drivers' ? selectedId : compareId} onChange={e => setCompareId(e.target.value)}>
                 {circuits.map(c => <option key={c.id} value={c.id} disabled={c.id === selectedId}>{c.location} — {c.name}</option>)}
               </select>
             </label>
-            <button className="lab-swap" onClick={swapCircuits} aria-label="Swap circuits">⇅ Swap circuits</button>
+            <button className="lab-swap" disabled={mode === 'compare3d' && analysisMode === 'drivers'} onClick={swapCircuits} aria-label="Swap circuits">⇅ Swap circuits</button>
           </div>
         )}
 

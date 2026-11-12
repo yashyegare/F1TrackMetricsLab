@@ -7,7 +7,7 @@ import { interpolateSample, speedToColor } from '../utils/telemetryProject';
  * Each vertex's color corresponds to the interpolated speed at that position.
  * Replaces multiple overlapping <Line> components with 1 draw call.
  */
-export default function SpeedRibbon({ points, elevation, cumulative, total, projected, width = 0.6, opacity = 1 }) {
+export default function SpeedRibbon({ points, elevation,  projected, width = 0.6, opacity = 1 }) {
   const geometry = useMemo(() => {
     if (!projected || projected.length < 2 || !points || points.length < 2) return null;
 

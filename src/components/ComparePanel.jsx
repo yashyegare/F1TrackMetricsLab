@@ -182,13 +182,13 @@ function TrackCard({ circuit, color, unit }) {
           </div>
           {circuit.drsZones > 0 && (
             <div>
-              <span className="label">DRS Zones</span>
+              <span className="label">Archived DRS count</span>
               <span className="value">{circuit.drsZones}</span>
             </div>
           )}
           {circuit.lapRecord && (
             <div className="compare-lap-record">
-              <span className="label">Lap Record</span>
+              <span className="label">Archived lap record</span>
               <span className="value" style={{ fontSize: '12px' }}>{circuit.lapRecord.time} {circuit.lapRecord.driver} ({circuit.lapRecord.year})</span>
             </div>
           )}
@@ -219,7 +219,7 @@ export default function ComparePanel({ primary, secondary, unit = 'metric' }) {
       {lengthDiff != null && (
         <p className="compare-note">
           Note: shapes are each scaled to fill their card, so sizes here aren't
-          directly comparable — length difference is {formatLen(lengthDiff, unit)}.
+          directly comparable — length difference is {formatLen(lengthDiff, unit)}. Green sections are inferred straights, not verified DRS locations. Historical metadata may refer to an earlier layout.
         </p>
       )}
     </div>

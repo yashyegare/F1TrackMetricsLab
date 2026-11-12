@@ -1,82 +1,5 @@
-/**
- * OpenF1 API client with IndexedDB caching.
- * API docs: https://openf1.org/docs/
- * Free, keyless, CORS-friendly. Data available from 2023 onward.
- *
- * Uses idb-keyval (IndexedDB) instead of localStorage:
- * - Async: no main-thread blocking on JSON.parse/stringify
- * - Virtually unlimited storage (vs 5MB localStorage limit)
- * - Handles large telemetry arrays without truncation
- */
-
-import { get, set, del, keys } from 'idb-keyval';
-
-const BASE = 'https://api.openf1.org/v1';
-const CACHE_PREFIX = 'openf1_';
-const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days (immutable historical data)
-
-function cacheKey(endpoint, params) {
-  const sorted = Object.entries(params)
-    .filter(([, v]) => v != null)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join('&');
-  return `${CACHE_PREFIX}${endpoint}_${sorted}`;
-}
-
-async function getCached(key) {
-  try {
-    const cached = await get(key);
-    if (!cached) return null;
-    if (Date.now() - cached.ts > CACHE_TTL) {
-      await del(key);
-      return null;
-    }
-    return cached.data;
-  } catch {
-    return null;
-  }
-}
-
-async function setCache(key, data) {
-  try {
-    await set(key, { data, ts: Date.now() });
-  } catch {
-    // Storage full — clear oldest half
-    try {
-      const allKeys = await keys();
-      const cacheKeys = allKeys.filter(k => typeof k === 'string' && k.startsWith(CACHE_PREFIX)).sort();
-      const toRemove = cacheKeys.slice(0, Math.floor(cacheKeys.length / 2));
-      await Promise.all(toRemove.map(k => del(k)));
-      await set(key, { data, ts: Date.now() });
-    } catch { /* give up */ }
-  }
-}
-
-async function fetchAPI(endpoint, params = {}, retries = 3) {
-  const key = cacheKey(endpoint, params);
-  const cached = await getCached(key);
-  if (cached) return cached;
-
-  const qs = new URLSearchParams(
-    Object.entries(params).filter(([, v]) => v != null)
-  ).toString();
-  const url = `${BASE}/${endpoint}${qs ? '?' + qs : ''}`;
-
-  for (let attempt = 0; attempt < retries; attempt++) {
-    const res = await fetch(url);
-    if (res.status === 429) {
-      const delay = Math.min(2000 * Math.pow(2, attempt), 10000);
-      await new Promise(r => setTimeout(r, delay));
-      continue;
-    }
-    if (!res.ok) throw new Error(`OpenF1 ${res.status}: ${url}`);
-    const data = await res.json();
-    await setCache(key, data);
-    return data;
-  }
-  throw new Error(`OpenF1 rate limited after ${retries} retries: ${url}`);
-}
+// Validated, cancellable and deduplicated OpenF1 requests.
+import { fetchAPI } from '../services/apiClient';
 
 // ---- High-level helpers ----
 
@@ -115,29 +38,29 @@ export function isTelemetryAvailable(circuitId) {
   return circuitId in CIRCUIT_MAP;
 }
 
-export async function getSessions(circuitId, year = 2024) {
+export async function getSessions(circuitId, year = 2024, signal) {
   const circuitName = getOpenF1CircuitName(circuitId);
   if (!circuitName) return [];
-  return fetchAPI('sessions', { year, circuit_short_name: circuitName });
+  return fetchAPI('sessions', { year, circuit_short_name: circuitName }, signal);
 }
 
-export async function getLaps(sessionKey) {
-  const data = await fetchAPI('laps', { session_key: sessionKey });
+export async function getLaps(sessionKey, signal) {
+  const data = await fetchAPI('laps', { session_key: sessionKey }, signal);
   return data
     .filter(l => l.lap_duration && l.lap_duration > 0)
     .sort((a, b) => a.lap_duration - b.lap_duration);
 }
 
-export async function getLocation(sessionKey, driverNumber) {
-  return fetchAPI('location', { session_key: sessionKey, driver_number: driverNumber });
+export async function getLocation(sessionKey, driverNumber, range = {}, signal) {
+  return fetchAPI('location', { session_key: sessionKey, driver_number: driverNumber, ...range }, signal);
 }
 
-export async function getCarData(sessionKey, driverNumber) {
-  return fetchAPI('car_data', { session_key: sessionKey, driver_number: driverNumber });
+export async function getCarData(sessionKey, driverNumber, range = {}, signal) {
+  return fetchAPI('car_data', { session_key: sessionKey, driver_number: driverNumber, ...range }, signal);
 }
 
-export async function getDrivers(sessionKey) {
-  return fetchAPI('drivers', { session_key: sessionKey });
+export async function getDrivers(sessionKey, signal) {
+  return fetchAPI('drivers', { session_key: sessionKey }, signal);
 }
 
 // ---- New endpoints (Fastlytics-inspired) ----
@@ -146,40 +69,40 @@ export async function getDrivers(sessionKey) {
  * Fetch pit stops for a session.
  * Returns array of { driver_number, lap_number, pit_duration, date, ... }
  */
-export async function getPitStops(sessionKey) {
-  return fetchAPI('pit', { session_key: sessionKey });
+export async function getPitStops(sessionKey, signal) {
+  return fetchAPI('pit', { session_key: sessionKey }, signal);
 }
 
 /**
  * Fetch race control messages (flags, SC, VSC, etc.)
  * Returns array of { category, message, flag, lap_number, date, ... }
  */
-export async function getRaceControl(sessionKey) {
-  return fetchAPI('race_control', { session_key: sessionKey });
+export async function getRaceControl(sessionKey, signal) {
+  return fetchAPI('race_control', { session_key: sessionKey }, signal);
 }
 
 /**
  * Fetch weather data for a session.
  * Returns array of { air_temperature, track_temperature, humidity, rainfall, wind_speed, wind_direction, date }
  */
-export async function getWeather(sessionKey) {
-  return fetchAPI('weather', { session_key: sessionKey });
+export async function getWeather(sessionKey, signal) {
+  return fetchAPI('weather', { session_key: sessionKey }, signal);
 }
 
 /**
  * Fetch interval/gap data for a session.
  * Returns array of { driver_number, gap_to_leader, interval, date, ... }
  */
-export async function getIntervals(sessionKey) {
-  return fetchAPI('intervals', { session_key: sessionKey });
+export async function getIntervals(sessionKey, signal) {
+  return fetchAPI('intervals', { session_key: sessionKey }, signal);
 }
 
 /**
  * Fetch stint data for a session (tire compound per stint).
  * Returns array of { driver_number, stint_number, compound, lap_start, lap_end, ... }
  */
-export async function getStints(sessionKey) {
-  return fetchAPI('stints', { session_key: sessionKey });
+export async function getStints(sessionKey, signal) {
+  return fetchAPI('stints', { session_key: sessionKey }, signal);
 }
 
 // ---- Tire compound mapping ----
@@ -216,17 +139,17 @@ export function getCompoundShort(compound) {
  * Core telemetry fetch: given a session + driver + lap, fetch and join location+car_data.
  * Returns { session, lap, telemetry } or null.
  */
-export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber, lapInfo, drivers = []) {
+export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber, lapInfo, drivers = [], signal) {
   const circuitName = getOpenF1CircuitName(circuitId);
 
-  // Fetch location and car_data in parallel (both only need session_key + driver)
-  const [locationRaw, carDataRaw] = await Promise.all([
-    getLocation(sessionKey, driverNumber),
-    getCarData(sessionKey, driverNumber),
-  ]);
-
-  const lapStart = new Date(lapInfo.date_start).getTime();
+  const lapStart = Date.parse(lapInfo.date_start);
   const lapEnd = lapStart + lapInfo.lap_duration * 1000;
+  if (!Number.isFinite(lapStart) || !Number.isFinite(lapEnd) || lapEnd <= lapStart) throw new Error('Invalid lap timing.');
+  const range = { 'date>=':new Date(lapStart).toISOString(), 'date<=':new Date(lapEnd).toISOString() };
+  const [locationRaw, carDataRaw] = await Promise.all([
+    getLocation(sessionKey,driverNumber,range,signal),
+    getCarData(sessionKey,driverNumber,range,signal),
+  ]);
 
   const location = locationRaw.filter(d => {
     const t = new Date(d.date).getTime();
@@ -237,8 +160,11 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
 
   const carData = carDataRaw.filter(d => {
     const t = new Date(d.date).getTime();
-    return t >= lapStart && t <= lapEnd;
+    return t >= lapStart && t <= lapEnd && ['speed','throttle','brake','drs','n_gear','rpm'].every(field => Number.isFinite(d[field]));
   });
+
+  location.sort((a,b) => Date.parse(a.date)-Date.parse(b.date));
+  carData.sort((a,b) => Date.parse(a.date)-Date.parse(b.date));
 
   // Two-pointer join: both arrays are date-sorted, so walk them together O(n+m)
   const telemetry = [];
@@ -250,6 +176,7 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
       carIdx++;
     }
     const closest = carData[carIdx];
+    if (!closest || Math.abs(Date.parse(closest.date)-locTime) > 1000) continue;
     telemetry.push({
       x: loc.x,
       y: loc.y,
@@ -264,6 +191,7 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
     });
   }
 
+  if (telemetry.length < 2 || carData.length < 2) throw new Error('This lap has insufficient recorded telemetry.');
   const driverInfo = drivers.find(d => d.driver_number === driverNumber);
 
   return {
@@ -290,62 +218,31 @@ export async function getLapTelemetry(circuitId, year, sessionKey, driverNumber,
 
 // ---- Qualifying data ----
 
-const qualiCache = new Map();
-const QUALI_CACHE_MAX = 20;
-
-export async function getQualifyingData(circuitId, year = 2024) {
-  const cacheKey = `${circuitId}:${year}`;
-  if (qualiCache.has(cacheKey)) {
-    const val = qualiCache.get(cacheKey);
-    qualiCache.delete(cacheKey); // bump to most-recently-used
-    qualiCache.set(cacheKey, val);
-    return val;
-  }
-
-  const sessions = await getSessions(circuitId, year);
-  const allQualis = sessions.filter(s => s.session_type === 'Qualifying');
-  let quali;
-  if (allQualis.length > 1) {
-    quali = allQualis.find(s => !s.session_name?.toLowerCase().includes('sprint'))
-      || allQualis[allQualis.length - 1];
-  } else {
-    quali = allQualis[0] || sessions.find(s => s.session_type === 'Race');
-  }
-  if (!quali) return null;
-
-  // Fetch laps and drivers in parallel (both only need session_key)
-  const [laps, drivers] = await Promise.all([
-    getLaps(quali.session_key),
-    getDrivers(quali.session_key),
-  ]);
-  if (laps.length === 0) return null;
-
-  const result = { sessions, quali, laps, drivers };
-  if (qualiCache.size >= QUALI_CACHE_MAX) {
-    const oldest = qualiCache.keys().next().value;
-    qualiCache.delete(oldest);
-  }
-  qualiCache.set(cacheKey, result);
-  return result;
+export function selectQualifyingSession(sessions) {
+  return sessions.filter(s => s.session_type === 'Qualifying' && !s.session_name.toLowerCase().includes('sprint'))
+    .sort((a,b) => Date.parse(b.date_start)-Date.parse(a.date_start))[0] || null;
 }
 
-/**
- * Full pipeline: get the fastest lap's telemetry for a circuit+year.
- */
-export async function getFastestLapTelemetry(circuitId, year = 2024) {
-  const circuitName = getOpenF1CircuitName(circuitId);
-  if (!circuitName) return null;
+export async function getQualifyingData(circuitId, year = 2024, signal) {
+  const sessions = await getSessions(circuitId,year,signal);
+  const quali = selectQualifyingSession(sessions);
+  if (!quali) return null; // Never substitute a race for missing qualifying.
+  const [laps,drivers] = await Promise.all([getLaps(quali.session_key,signal),getDrivers(quali.session_key,signal)]);
+  const valid = laps.filter(l => !l.is_pit_out_lap && Number.isFinite(Date.parse(l.date_start)));
+  return valid.length ? { sessions,quali,laps:valid,drivers } : null;
+}
 
-  const data = await getQualifyingData(circuitId, year);
-  if (!data) return null;
-  const { quali, laps, drivers } = data;
-  const fastest = laps[0];
+export function completedRaceLaps(laps) {
+  const recorded = laps.filter(l => Number.isInteger(l.lap_number) && l.lap_number > 0 && l.lap_duration > 0);
+  return recorded.length ? Math.max(...recorded.map(l => l.lap_number)) : null;
+}
 
-  const result = await getLapTelemetry(
-    circuitId, year, quali.session_key,
-    fastest.driver_number, fastest, drivers
-  );
-  if (!result) return null;
-  result.session.name = quali.session_name;
-  return result;
+export async function getRaceContext(qualiData,signal) {
+  const race = qualiData.sessions.find(s => s.session_name === 'Race' && s.meeting_key === qualiData.quali.meeting_key);
+  if (!race) return { totalLaps:null,partial:true };
+  const requests = [getStints(race.session_key,signal),getPitStops(race.session_key,signal),getRaceControl(race.session_key,signal),getWeather(race.session_key,signal),getLaps(race.session_key,signal)];
+  const results = await Promise.allSettled(requests);
+  if (signal?.aborted) throw new DOMException('Cancelled','AbortError');
+  const [stints,pitStops,raceControl,weather,laps] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+  return { stints,pitStops,raceControl,weather,totalLaps:completedRaceLaps(laps || []),partial:results.some(r => r.status === 'rejected'),session:race };
 }

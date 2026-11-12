@@ -48,7 +48,7 @@ export function detectStraights(points, drsZoneCount = 0, windowSize = 5) {
       const prev = ((i + d - 1) % n + n) % n;
       const curr = ((i + d) % n + n) % n;
       const next = ((i + d + 1) % n + n) % n;
-      totalAngle += angleBetween(points[prev], points[curr], points[next]);
+      totalAngle += Math.PI - angleBetween(points[prev], points[curr], points[next]);
       count++;
     }
     straightness[i] = count > 0 ? totalAngle / count : Math.PI;

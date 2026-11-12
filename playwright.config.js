@@ -9,6 +9,8 @@ export default defineConfig({
     reuseExistingServer: true,
   },
   use: {
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
     baseURL: 'http://localhost:5175',
     viewport: { width: 1280, height: 800 },
   },

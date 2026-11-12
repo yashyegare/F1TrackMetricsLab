@@ -1,11 +1,11 @@
 import React, { Suspense, useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import Track3D from './Track3D.jsx';
 import { getTrackDetail } from '../utils/track3d';
-import { isTelemetryAvailable, getQualifyingData, getLapTelemetry, getPitStops, getStints, getRaceControl, getWeather } from '../utils/openf1';
-import { projectTelemetry, binTelemetry, speedToColor } from '../utils/telemetryProject';
-import TireStrategy from './TireStrategy';
-import RaceControlOverlay from './RaceControlOverlay';
-import SectorComparison from './SectorComparison';
+import { isTelemetryAvailable } from '../utils/openf1';
+import { useTelemetryForCircuit } from '../hooks/useTelemetryForCircuit';
+import { useStore } from '../store';
+import RaceDataPanel from './RaceDataPanel';
+import DriverInsights from './DriverInsights';
 import WeatherChip from './WeatherChip';
 
 const Overlay3DPanel = React.lazy(() => import('./Overlay3DPanel.jsx'));
@@ -18,90 +18,6 @@ function fmtLen(m, unit) {
 function fmtAlt(m, unit) {
   if (m == null) return '—';
   return unit === 'imperial' ? `${(m * 3.28084).toFixed(0)} ft` : `${m} m`;
-}
-
-function RaceDataPanel({ primaryTelemetry, secondaryTelemetry, primaryStints, secondaryStints, primaryPitStops, secondaryPitStops, primaryTotalLaps, secondaryTotalLaps, primaryRaceControl, secondaryRaceControl, primaryQualiData, secondaryQualiData }) {
-  const [expanded, setExpanded] = useState(false);
-  const hasAnyData = primaryTelemetry || secondaryTelemetry || primaryRaceControl || secondaryRaceControl;
-  if (!hasAnyData) return null;
-
-  const hasTire = primaryStints || secondaryStints;
-  const hasRC = primaryRaceControl || secondaryRaceControl;
-  const hasSectors = primaryTelemetry?.lap || secondaryTelemetry?.lap;
-
-  // Count loaded sections for the badge
-  const loadedCount = [hasTire, hasRC, hasSectors].filter(Boolean).length;
-
-  return (
-    <div className="race-data-panel">
-      <button
-        className={`race-data-toggle ${expanded ? 'expanded' : ''}`}
-        onClick={() => setExpanded(e => !e)}
-      >
-        <div className="race-data-toggle-left">
-          <span className="race-data-chevron">{expanded ? '▾' : '▸'}</span>
-          <span className="race-data-title">Race Data</span>
-          <span className="race-data-count">{loadedCount} sources</span>
-        </div>
-        <div className="race-data-toggle-pills">
-          {hasTire && <span className="race-data-pill tire">Tires</span>}
-          {hasRC && <span className="race-data-pill rc">Flags</span>}
-          {hasSectors && <span className="race-data-pill sectors">Sectors</span>}
-        </div>
-      </button>
-      {expanded && (
-        <div className="race-data-content">
-          {/* Tire Strategy — one per driver */}
-          {hasTire && (
-            <div className="race-context-row">
-              {primaryTelemetry && (
-                <TireStrategy
-                  stints={primaryStints}
-                  pitStops={primaryPitStops}
-                  totalLaps={primaryTotalLaps}
-                  driverNumber={primaryTelemetry.lap.driver}
-                  driverName={primaryTelemetry.lap.driverName}
-                />
-              )}
-              {secondaryTelemetry && (
-                <TireStrategy
-                  stints={secondaryStints}
-                  pitStops={secondaryPitStops}
-                  totalLaps={secondaryTotalLaps}
-                  driverNumber={secondaryTelemetry.lap.driver}
-                  driverName={secondaryTelemetry.lap.driverName}
-                />
-              )}
-            </div>
-          )}
-          {/* Race Control Flags */}
-          {hasRC && (
-            <div className="race-context-row">
-              {primaryRaceControl && (
-                <RaceControlOverlay flags={primaryRaceControl} totalLaps={primaryTotalLaps} />
-              )}
-              {secondaryRaceControl && !primaryRaceControl && (
-                <RaceControlOverlay flags={secondaryRaceControl} totalLaps={secondaryTotalLaps} />
-              )}
-            </div>
-          )}
-          {/* Sector Comparison */}
-          {hasSectors && (
-            <div className="race-context-row">
-              <SectorComparison
-                primaryLap={primaryTelemetry?.lap}
-                secondaryLap={secondaryTelemetry?.lap}
-                primaryName={primaryTelemetry?.lap?.driverName?.split(' ').pop()}
-                secondaryName={secondaryTelemetry?.lap?.driverName?.split(' ').pop()}
-                primaryAllLaps={primaryQualiData.current?.laps}
-                secondaryAllLaps={secondaryQualiData.current?.laps}
-              />
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, animSpeed, animPaused, canvasRef, telemetry, telemetryLoading, loadStep, telemetryError, sharedProgressRef }) {
@@ -124,7 +40,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
           sharedProgressRef={sharedProgressRef}
         />
       </div>
-      <p className="track3d-caption">Drag to rotate • Scroll to zoom • Click corner to focus</p>
+      <p className="track3d-caption">Drag to rotate · Scroll or pinch to zoom · Click an inferred corner to focus. Green sections mark inferred straights, not verified DRS locations.</p>
 
       <h3 className="track3d-title">{circuit.name}</h3>
       <p className="compare-location">{circuit.location}</p>
@@ -176,13 +92,13 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
         </div>
         {circuit.drsZones > 0 && (
           <div>
-            <span className="label">DRS Zones</span>
+            <span className="label">Archived DRS count</span>
             <span className="value">{circuit.drsZones}</span>
           </div>
         )}
         {circuit.lapRecord && (
           <div style={{ gridColumn: '1 / -1' }}>
-            <span className="label">Lap Record</span>
+            <span className="label">Archived lap record</span>
             <span className="value" style={{ fontSize: '12px' }}>{circuit.lapRecord.time} {circuit.lapRecord.driver} ({circuit.lapRecord.year})</span>
           </div>
         )}
@@ -210,61 +126,41 @@ function formatLapDuration(seconds) {
  * Given qualifying data and a driver number, find that driver's fastest lap
  * and return the full telemetry result via getLapTelemetry.
  */
-async function fetchDriverTelemetry(circuitId, year, qualiData, driverNumber) {
-  const { quali, laps, drivers } = qualiData;
-  // Find this driver's fastest lap
-  const driverLaps = laps.filter(l => l.driver_number === driverNumber);
-  if (driverLaps.length === 0) return null;
-  const fastest = driverLaps[0]; // already sorted by duration
-
-  const result = await getLapTelemetry(circuitId, year, quali.session_key, driverNumber, fastest, drivers);
-  if (!result) return null;
-  result.session.name = quali.session_name;
-  return result;
-}
-
 export default function Compare3DPanel({ primary, secondary, unit = 'metric', initialTelemetry }) {
   const [viewMode, setViewMode] = useState('sidebyside');
   const [animSpeed, setAnimSpeed] = useState(0);
   const [animPaused, setAnimPaused] = useState(false);
   const [telemetryMode, setTelemetryMode] = useState(initialTelemetry?.racePace ?? false);
   const [telemetryYear, setTelemetryYear] = useState(initialTelemetry?.year || 2024);
-  const [primaryTelemetry, setPrimaryTelemetry] = useState(null);
-  const [secondaryTelemetry, setSecondaryTelemetry] = useState(null);
-  const [primaryLoading, setPrimaryLoading] = useState(false);
-  const [secondaryLoading, setSecondaryLoading] = useState(false);
-  const [primaryError, setPrimaryError] = useState(null);
-  const [secondaryError, setSecondaryError] = useState(null);
-  const [retryCount, setRetryCount] = useState(0);
-  const [cameraReset, setCameraReset] = useState(0);
-  const requestVersion = useRef(0);
-
-  // Driver picker state
-  const [primaryDrivers, setPrimaryDrivers] = useState([]);
-  const [secondaryDrivers, setSecondaryDrivers] = useState([]);
-  const [primaryDriver, setPrimaryDriver] = useState(null); // null = fastest
-  const [secondaryDriver, setSecondaryDriver] = useState(null);
-  const [primaryLoadStep, setPrimaryLoadStep] = useState('');
-  const [secondaryLoadStep, setSecondaryLoadStep] = useState('');
-  const primaryQualiData = useRef(null);
-  const secondaryQualiData = useRef(null);
-
-  // Race context data
-  const [primaryStints, setPrimaryStints] = useState(null);
-  const [secondaryStints, setSecondaryStints] = useState(null);
-  const [primaryPitStops, setPrimaryPitStops] = useState(null);
-  const [secondaryPitStops, setSecondaryPitStops] = useState(null);
-  const [primaryRaceControl, setPrimaryRaceControl] = useState(null);
-  const [secondaryRaceControl, setSecondaryRaceControl] = useState(null);
-  const [primaryWeather, setPrimaryWeather] = useState(null);
-  const [secondaryWeather, setSecondaryWeather] = useState(null);
-  const [primaryTotalLaps, setPrimaryTotalLaps] = useState(0);
-  const [secondaryTotalLaps, setSecondaryTotalLaps] = useState(0);
+  const driverMode = useStore(state => state.analysisMode === 'drivers');
+  const setAnalysisMode = useStore(state => state.setAnalysisMode);
+  const graphicsQuality = useStore(state => state.graphicsQuality);
+  const setGraphicsQuality = useStore(state => state.setGraphicsQuality);
+  const telemetryEnabled = driverMode || telemetryMode;
+  const [primaryChoice,setPrimaryChoice] = useState(initialTelemetry?.driverA ?? null);
+  const [secondaryChoice,setSecondaryChoice] = useState(initialTelemetry?.driverB ?? null);
+  const [cameraReset,setCameraReset] = useState(0);
+  const a = useTelemetryForCircuit(primary,telemetryYear,{enabled:telemetryEnabled,driverNumber:primaryChoice});
+  const b = useTelemetryForCircuit(secondary,telemetryYear,{enabled:telemetryEnabled,driverNumber:secondaryChoice,rank:driverMode?1:0,excludeDriver:driverMode?a.driver:null});
+  const primaryTelemetry=a.telemetry, secondaryTelemetry=b.telemetry;
+  const primaryLoading=a.loading, secondaryLoading=b.loading;
+  const primaryError=a.error, secondaryError=b.error;
+  const primaryDrivers=a.drivers, secondaryDrivers=b.drivers;
+  const primaryDriver=a.driver, secondaryDriver=b.driver;
+  const primaryLoadStep=a.loadStep, secondaryLoadStep=b.loadStep;
+  const primaryQualiData={current:a.qualiData}, secondaryQualiData={current:b.qualiData};
+  const primaryStints=a.raceContext.stints, secondaryStints=b.raceContext.stints;
+  const primaryPitStops=a.raceContext.pitStops, secondaryPitStops=b.raceContext.pitStops;
+  const primaryRaceControl=a.raceContext.raceControl, secondaryRaceControl=b.raceContext.raceControl;
+  const primaryWeather=a.raceContext.weather, secondaryWeather=b.raceContext.weather;
+  const primaryTotalLaps=a.raceContext.totalLaps, secondaryTotalLaps=b.raceContext.totalLaps;
+  const handleDriverChange=(side,driver) => side === 'primary' ? setPrimaryChoice(driver) : setSecondaryChoice(driver);
 
   // Sync telemetry state to URL for deep linking
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    if (telemetryMode) {
+    p.set('circuit',primary.id); p.set('vs',secondary.id); p.set('mode','compare3d'); p.set('analysis',driverMode?'drivers':'tracks');
+    if (telemetryEnabled) {
       p.set('racePace', '1');
       p.set('year', String(telemetryYear));
       if (primaryDriver != null) p.set('driverA', String(primaryDriver));
@@ -278,7 +174,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
     const qs = p.toString();
     const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     window.history.replaceState(null, '', url);
-  }, [telemetryMode, telemetryYear, primaryDriver, secondaryDriver]);
+  }, [telemetryEnabled, telemetryYear, primaryDriver, secondaryDriver, driverMode, primary.id, secondary.id]);
 
   const primaryDetail = useMemo(() => getTrackDetail(primary), [primary]);
   const secondaryDetail = useMemo(() => getTrackDetail(secondary), [secondary]);
@@ -287,176 +183,13 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const sharedCameraRef = useRef({ position: null, target: null, _instanceId: null, _targetId: null });
   // Shared animation progress for syncing CarDots in side-by-side
   const sharedProgressRef = useRef({ progress: 0, active: false });
+  useEffect(() => {
+    Object.assign(sharedProgressRef.current,{elapsed:0,synchronizeTime:driverMode,cycleMs:Math.max(primaryTelemetry?.lap.duration || 0,secondaryTelemetry?.lap.duration || 0)*1000});
+  },[driverMode,primaryTelemetry,secondaryTelemetry]);
 
   // Canvas refs for screenshot
   const primaryCanvasRef = useRef();
   const secondaryCanvasRef = useRef();
-
-  // Projection cache
-  const projectionCache = useRef(new Map());
-
-  function getCachedProjection(circuitId, year, coordinates, telemetry) {
-    const key = `${circuitId}:${year}:${coordinates.length}`;
-    if (projectionCache.current.has(key)) return projectionCache.current.get(key);
-    const { projected } = projectTelemetry(coordinates, telemetry);
-    const binned = binTelemetry(projected, coordinates.length);
-    const result = { projected, binned };
-    if (projectionCache.current.size > 20) {
-      const firstKey = projectionCache.current.keys().next().value;
-      projectionCache.current.delete(firstKey);
-    }
-    projectionCache.current.set(key, result);
-    return result;
-  }
-
-  // Fetch telemetry when mode is enabled
-  useEffect(() => {
-    requestVersion.current += 1;
-    if (!telemetryMode) {
-      setPrimaryLoading(false); setSecondaryLoading(false);
-      setPrimaryLoadStep(''); setSecondaryLoadStep('');
-      setPrimaryTelemetry(null);
-      setSecondaryTelemetry(null);
-      setPrimaryDrivers([]);
-      setSecondaryDrivers([]);
-      setPrimaryError(null);
-      setSecondaryError(null);
-      setPrimaryDriver(null);
-      setSecondaryDriver(null);
-      primaryQualiData.current = null;
-      secondaryQualiData.current = null;
-      setPrimaryStints(null);
-      setSecondaryStints(null);
-      setPrimaryPitStops(null);
-      setSecondaryPitStops(null);
-      setPrimaryRaceControl(null);
-      setSecondaryRaceControl(null);
-      setPrimaryWeather(null);
-      setSecondaryWeather(null);
-      return;
-    }
-
-    let cancelled = false;
-    setPrimaryTelemetry(null); setSecondaryTelemetry(null);
-    setPrimaryError(null); setSecondaryError(null);
-    setPrimaryDrivers([]); setSecondaryDrivers([]);
-    setPrimaryLoading(false); setSecondaryLoading(false);
-    setPrimaryStints(null); setSecondaryStints(null);
-    setPrimaryPitStops(null); setSecondaryPitStops(null);
-    setPrimaryRaceControl(null); setSecondaryRaceControl(null);
-    setPrimaryWeather(null); setSecondaryWeather(null);
-
-    async function fetchSide(side) {
-      const circuit = side === 'primary' ? primary : secondary;
-      const isPrimary = side === 'primary';
-      const setDrivers = isPrimary ? setPrimaryDrivers : setSecondaryDrivers;
-      const setDriver = isPrimary ? setPrimaryDriver : setSecondaryDriver;
-      const setData = isPrimary ? setPrimaryTelemetry : setSecondaryTelemetry;
-      const setLoading = isPrimary ? setPrimaryLoading : setSecondaryLoading;
-      const setLoadStep = isPrimary ? setPrimaryLoadStep : setSecondaryLoadStep;
-      const qualiDataRef = isPrimary ? primaryQualiData : secondaryQualiData;
-
-      if (!isTelemetryAvailable(circuit.id)) return;
-      setLoading(true);
-      try {
-        setLoadStep('Resolving session…');
-        const qualiData = await getQualifyingData(circuit.id, telemetryYear);
-        if (cancelled || !qualiData) throw new Error('no qualifying data');
-        qualiDataRef.current = qualiData;
-
-        const seen = new Set();
-        const uniqueDrivers = qualiData.drivers.filter(d => {
-          if (seen.has(d.driver_number)) return false;
-          seen.add(d.driver_number);
-          return true;
-        }).sort((a, b) => a.full_name.localeCompare(b.full_name));
-        setDrivers(uniqueDrivers);
-
-        const fastestDriver = qualiData.laps[0]?.driver_number;
-        const fastestTime = qualiData.laps[0] ? `${Math.floor(qualiData.laps[0].lap_duration / 60)}:${(qualiData.laps[0].lap_duration % 60).toFixed(3)}` : '';
-        const drvName = qualiData.drivers.find(d => d.driver_number === fastestDriver)?.full_name?.split(' ').pop() || '';
-        if (fastestDriver != null) setDriver(fastestDriver);
-
-        setLoadStep(`Finding fastest lap (${drvName} ${fastestTime})…`);
-        const data = await fetchDriverTelemetry(circuit.id, telemetryYear, qualiData, fastestDriver);
-        if (!cancelled && data) {
-          setLoadStep('Projecting ribbon alignment…');
-          const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, circuit.coordinates, data.telemetry);
-          setData({ ...data, binned, projected });
-        }
-
-        // Fetch race context data (pit stops, race control, weather) in parallel
-        if (!cancelled) {
-          const raceSession = qualiData.sessions.find(s => s.session_type === 'Race');
-          if (raceSession) {
-            const raceKey = raceSession.session_key;
-            const [stintsData, pitData, rcData, wxData] = await Promise.allSettled([
-              getStints(raceKey),
-              getPitStops(raceKey),
-              getRaceControl(raceKey),
-              getWeather(raceKey),
-            ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
-            if (cancelled) return;
-
-            if (isPrimary) {
-              setPrimaryStints(stintsData);
-              setPrimaryPitStops(pitData);
-              setPrimaryRaceControl(rcData);
-              setPrimaryWeather(wxData);
-              setPrimaryTotalLaps(qualiData.laps.length || raceSession.total_laps || 57);
-            } else {
-              setSecondaryStints(stintsData);
-              setSecondaryPitStops(pitData);
-              setSecondaryRaceControl(rcData);
-              setSecondaryWeather(wxData);
-              setSecondaryTotalLaps(qualiData.laps.length || raceSession.total_laps || 57);
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Telemetry fetch failed for', circuit.id, e);
-        if (!cancelled) {
-          const setError = isPrimary ? setPrimaryError : setSecondaryError;
-          setError('No qualifying lap could be loaded for this year. Try another year or retry the connection.');
-        }
-      }
-      if (!cancelled) { setLoading(false); setLoadStep(''); }
-    }
-
-    // Fetch both sides in parallel
-    Promise.allSettled([fetchSide('primary'), fetchSide('secondary')]);
-    return () => { cancelled = true; requestVersion.current += 1; };
-  }, [telemetryMode, telemetryYear, primary.id, secondary.id, primary.coordinates, secondary.coordinates, retryCount]);
-
-  // Handle driver selection change
-  const handleDriverChange = useCallback(async (side, driverNumber) => {
-    const version = requestVersion.current;
-    const setDriver = side === 'primary' ? setPrimaryDriver : setSecondaryDriver;
-    const setData = side === 'primary' ? setPrimaryTelemetry : setSecondaryTelemetry;
-    const setLoading = side === 'primary' ? setPrimaryLoading : setSecondaryLoading;
-    const setError = side === 'primary' ? setPrimaryError : setSecondaryError;
-    const qualiDataRef = side === 'primary' ? primaryQualiData : secondaryQualiData;
-    const circuit = side === 'primary' ? primary : secondary;
-    const coords = side === 'primary' ? primary.coordinates : secondary.coordinates;
-
-    setDriver(driverNumber);
-    if (!qualiDataRef.current || !driverNumber) return;
-
-    setLoading(true);
-    setData(null); setError(null);
-    try {
-      const data = await fetchDriverTelemetry(circuit.id, telemetryYear, qualiDataRef.current, driverNumber);
-      if (version !== requestVersion.current) return;
-      if (data) {
-        const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, coords, data.telemetry);
-        setData({ ...data, binned, projected });
-      }
-    } catch (e) {
-      console.warn('Driver telemetry fetch failed', e);
-      if (version === requestVersion.current) setError('This driver’s lap could not be loaded. Try another driver or retry.');
-    }
-    if (version === requestVersion.current) setLoading(false);
-  }, [telemetryYear, primary, secondary]);
 
   const handleScreenshot = useCallback((name) => {
     const cards = document.querySelectorAll('.track3d-canvas-wrap-outer');
@@ -561,6 +294,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   return (
     <div className="compare3d-wrapper">
       <div className="compare3d-inner">
+        <div className="lab-analysis-toggle" aria-label="Analysis mode"><button aria-pressed={!driverMode} onClick={() => setAnalysisMode('tracks')}>Compare tracks</button><button aria-pressed={driverMode} onClick={() => setAnalysisMode('drivers')}>Compare drivers</button></div>
+        <p className="lab-analysis-help">{driverMode ? 'Same circuit and qualifying session. Pick two different drivers to examine where time was gained.' : 'Compare track geometry. Cross-track replay is illustrative; it does not measure driver performance.'}</p>
         <div className="compare3d-mode-toggle">
           <button
             className={viewMode === 'sidebyside' ? 'active' : ''}
@@ -579,6 +314,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         </div>
 
         <div className="compare3d-toolbar">
+          <label className="lab-quality-label">Graphics<select aria-label="3D graphics quality" value={graphicsQuality} onChange={event => setGraphicsQuality(event.target.value)}><option value="auto">Auto</option><option value="low">Low power</option><option value="high">High</option></select></label>
           <button className="anim-btn" onClick={() => { sharedCameraRef.current = { position:null, target:null, _instanceId:null, _targetId:null }; setCameraReset(n => n+1); }}>Reset camera</button>
           <div className="anim-controls">
             <span className="toolbar-label">Playback</span>
@@ -597,10 +333,10 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
           <div className="anim-controls telemetry-controls">
             <button
-              className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
-              aria-pressed={telemetryMode}
+              className={`anim-btn${telemetryEnabled ? ' active telemetry-active' : ''}`}
+              aria-pressed={telemetryEnabled}
               onClick={() => setTelemetryMode(t => !t)}
-              disabled={!telemetryMode && !primaryHasTelemetry && !secondaryHasTelemetry}
+              disabled={driverMode || (!telemetryEnabled && !primaryHasTelemetry && !secondaryHasTelemetry)}
               title="Load historical qualifying laps from OpenF1"
             >
               Qualifying telemetry
@@ -613,8 +349,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
                 onChange={e => {
                   const y = Number(e.target.value);
                   setTelemetryYear(y);
-                  setPrimaryDriver(null);
-                  setSecondaryDriver(null);
+                  setPrimaryChoice(null);
+                  setSecondaryChoice(null);
                 }}
               >
                 <option value={2026}>2026</option>
@@ -638,11 +374,11 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           <strong>Qualifying · {telemetryYear} · OpenF1</strong>
           <span>{primary.location}: {primaryHasTelemetry ? 'historical coverage' : 'not covered'} · {secondary.location}: {secondaryHasTelemetry ? 'historical coverage' : 'not covered'}</span>
           <small>Choose a year, then load qualifying telemetry. Some sessions or laps may be unavailable. Driver menus appear after loading; race context is shown separately.</small>
-          {telemetryMode && (primaryError || secondaryError) && <button className="anim-btn" onClick={() => setRetryCount(n => n+1)}>Retry telemetry</button>}
+          {telemetryEnabled && (primaryError || secondaryError) && <button className="anim-btn" onClick={() => { a.retry(); b.retry(); }}>Retry telemetry</button>}
         </div>
 
         {/* Driver pickers + Weather — only in Side-by-Side mode */}
-        {viewMode === 'sidebyside' && telemetryMode && (
+        {viewMode === 'sidebyside' && telemetryEnabled && (
           <>
             <div className="driver-picker-row">
               {primaryHasTelemetry && primaryDrivers.length > 0 ? (
@@ -748,14 +484,17 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               secondaryWeather={secondaryWeather}
               primaryLap={primaryTelemetry?.lap}
               secondaryLap={secondaryTelemetry?.lap}
-              primaryAllLaps={primaryQualiData.current?.laps}
-              secondaryAllLaps={secondaryQualiData.current?.laps}
+              comparable={driverMode}
+              primaryAllLaps={primaryQualiData.current?.laps?.filter(l => l.driver_number === primaryDriver)}
+              secondaryAllLaps={secondaryQualiData.current?.laps?.filter(l => l.driver_number === secondaryDriver)}
             />
           </Suspense>
         )}
 
+        {driverMode && <DriverInsights primary={primaryTelemetry} secondary={secondaryTelemetry} sharedProgressRef={sharedProgressRef} />}
+
         {/* Speed legend — immediately below 3D viewports */}
-        {viewMode === 'sidebyside' && telemetryMode && (
+        {viewMode === 'sidebyside' && telemetryEnabled && (
           <div className="speed-legend-bar-wrap">
             <div className="speed-legend-inner">
               <span className="speed-legend-label">Ribbon Speed</span>
@@ -773,8 +512,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         )}
 
         {/* Race Data — collapsible banner wrapping tire/race-control/sectors */}
-        {viewMode === 'sidebyside' && telemetryMode && (
-          <RaceDataPanel
+        {viewMode === 'sidebyside' && telemetryEnabled && (
+          <RaceDataPanel comparable={driverMode}
             primaryTelemetry={primaryTelemetry}
             secondaryTelemetry={secondaryTelemetry}
             primaryStints={primaryStints}
@@ -792,7 +531,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
         {viewMode === 'sidebyside' && (
           <p className="compare-note">
-            {telemetryMode ? (
+            {telemetryEnabled ? (
               <>Speed-colored ribbon uses real telemetry from OpenF1 ({primaryTelemetry?.lap?.driverName || ('Driver #' + (primaryTelemetry?.lap?.driver ?? '?'))}/{secondaryTelemetry?.lap?.driverName || ('Driver #' + (secondaryTelemetry?.lap?.driver ?? '?'))} qualifying laps). Pick any driver from the dropdown to compare head-to-head.</>
             ) : (
               <>Track shape comes from the same outline data as the map view. Corner count, spin direction and longest straight are computed from that outline (not official telemetry), and the road width / marker heights are stylized for visibility, not to scale.</>

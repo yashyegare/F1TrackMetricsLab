@@ -39,14 +39,14 @@ function getFlagStyle(flag, category, message) {
   return null;
 }
 
-const FIELD_STYLES = FLAG_STYLES;
+
 
 /**
  * Render flag markers as a horizontal strip.
  * `flags` is an array of { flag, lap_number, message, date }.
  * `sessionDateStart` is the ISO date of the session start for progress mapping.
  */
-export default function RaceControlOverlay({ flags, totalLaps, sessionDateStart }) {
+export default function RaceControlOverlay({ flags }) {
   if (!flags || flags.length === 0) return null;
 
   // Filter to interesting flags (skip non-flag messages)

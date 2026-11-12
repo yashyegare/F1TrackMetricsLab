@@ -8,8 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint src/ --max-warnings=50",
-    "test:e2e": "npx playwright test"
+    "lint": "eslint src/ --max-warnings=0",
+    "test:e2e": "npx playwright test",
+    "typecheck": "tsc --noEmit",
+    "benchmark": "node scripts/benchmark.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -21,6 +23,7 @@
     "react-leaflet": "^4.2.1",
     "recharts": "^3.10.1",
     "three": "^0.185.1",
+    "zod": "^4.6.7",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
@@ -29,11 +32,29 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
-    "@vitejs/plugin-react": "^4.3.1",
-    "eslint": "^10.9.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^6.3.0",
+    "eslint": "^10.14.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
-    "vite": "^5.4.0",
-    "vitest": "^2.1.9"
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.12"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    },
+    "@eslint/config-array": {
+      "minimatch": "^11.0.1"
+    },
+    "eslint": {
+      "minimatch": "^11.0.1"
+    }
   }
 }

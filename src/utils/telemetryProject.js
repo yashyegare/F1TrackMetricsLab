@@ -10,18 +10,9 @@
  */
 
 import { projectToLocalMeters } from './geometry.js';
+import { isDrsOpen } from './drsStatus.js';
 
 // ---- Path utilities ----
-
-function _pathLength(points) {
-  let len = 0;
-  for (let i = 1; i < points.length; i++) {
-    const dx = points[i][0] - points[i - 1][0];
-    const dy = points[i][1] - points[i - 1][1];
-    len += Math.hypot(dx, dy);
-  }
-  return len;
-}
 
 function cumulativeLengths(points) {
   const cum = [0];
@@ -123,15 +114,13 @@ function findBestRotation(trackNorm, openf1Norm, trackCum, trackTotal) {
   const mirrored = openf1Norm.map(([x, y]) => [x, -y]);
   const mirrorResult = searchAngle(mirrored, 0, 360, 1);
 
-  let bestPoints, coarseAngle, _bestAvgDist;
+  let bestPoints, coarseAngle;
   if (mirrorResult.avgDist < normal.avgDist) {
     bestPoints = mirrored;
     coarseAngle = mirrorResult.angle;
-    _bestAvgDist = mirrorResult.avgDist;
   } else {
     bestPoints = openf1Norm;
     coarseAngle = normal.angle;
-    _bestAvgDist = normal.avgDist;
   }
 
   // Fine search: ±5° around best, step 0.1°
@@ -156,6 +145,8 @@ export function projectTelemetry(trackCoords, openf1Telemetry) {
 
   // 2. Extract OpenF1 x,y as 2D horizontal ground-plane points (z is elevation)
   const openf1Points = openf1Telemetry.map(d => [d.x, d.y]);
+  const traveled = cumulativeLengths(openf1Points);
+  const lapDistance = traveled[traveled.length-1] || 1;
   const openf1Norm = normalizeScale(translateToOrigin(openf1Points));
 
   // 3. Compute cumulative lengths for track
@@ -176,6 +167,7 @@ export function projectTelemetry(trackCoords, openf1Telemetry) {
 
     return {
       progress: t,
+      lapProgress: traveled[i]/lapDistance,
       distance,
       speed: sample.speed,
       throttle: sample.throttle,
@@ -230,7 +222,7 @@ export function binTelemetry(projected, numBins = 100) {
     avgSpeed: bin.speeds.length > 0 ? bin.speeds.reduce((a, b) => a + b, 0) / bin.speeds.length : 0,
     maxSpeed: bin.speeds.length > 0 ? Math.max(...bin.speeds) : 0,
     avgThrottle: bin.throttles.length > 0 ? bin.throttles.reduce((a, b) => a + b, 0) / bin.throttles.length : 0,
-    drsActive: bin.drs.some(d => d > 0),
+    drsActive: bin.drs.some(isDrsOpen),
     sampleCount: bin.speeds.length,
   }));
 }
@@ -243,7 +235,10 @@ export function binTelemetry(projected, numBins = 100) {
  * At 3.7Hz sampling, linear interpolation makes the car appear segmented.
  * This provides smooth speed/throttle transitions between data points.
  */
+const sortedSamples = new WeakMap();
 export function interpolateSample(projected, progress) {
+  if (!sortedSamples.has(projected)) sortedSamples.set(projected,[...projected].sort((a,b) => a.progress-b.progress));
+  projected = sortedSamples.get(projected);
   const n = projected.length;
   if (n === 0) return { speed: 0, throttle: 0, brake: 0, drs: 0, gear: 0 };
   if (n === 1) return projected[0];
@@ -252,7 +247,7 @@ export function interpolateSample(projected, progress) {
   let idx = 0;
   while (idx < n - 1 && projected[idx + 1].progress <= progress) idx++;
 
-  if (idx <= 0) return projected[0];
+  if (progress <= projected[0].progress) return projected[0];
   if (idx >= n - 1) return projected[n - 1];
 
   const p0 = projected[Math.max(0, idx - 1)];
