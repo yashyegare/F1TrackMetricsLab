@@ -24,6 +24,16 @@ test.describe('F1 Track Metrics Lab', () => {
     await expect(b).toHaveValue(beforeA);
     await expect(page.getByLabel('Comparison highlights')).toBeVisible();
   });
+  test('mobile comparison stacks cards within the viewport', async ({page}) => {
+    await page.setViewportSize({width:390,height:844});
+    await page.goto('/?mode=compare');
+    const cards = page.locator('.compare-card');
+    await expect(cards).toHaveCount(2);
+    const first = await cards.nth(0).boundingBox(), second = await cards.nth(1).boundingBox();
+    expect(first.x).toBeGreaterThanOrEqual(0);
+    expect(first.x+first.width).toBeLessThanOrEqual(390);
+    expect(second.y).toBeGreaterThan(first.y+first.height);
+  });
   test('recovers from an empty circuit search', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', {name:'Search circuits or cities'}).fill('no-such-circuit');

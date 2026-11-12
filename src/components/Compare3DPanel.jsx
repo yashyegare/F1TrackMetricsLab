@@ -148,6 +148,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
         </div>
       )}
 
+      <details className="lab-track-statistics" open={window.innerWidth > 768}><summary>Circuit details</summary>
       <div className="track3d-stats">
         <div>
           <span className="label">Length</span>
@@ -194,6 +195,7 @@ function StatCard({ circuit, detail, color, unit, sharedCameraRef, instanceId, a
           </div>
         )}
       </div>
+      </details>
     </div>
   );
 }
@@ -624,9 +626,9 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
           <div className="toolbar-separator" />
 
           <details className="lab-export"><summary>Export</summary><div className="screenshot-controls">
-            <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
-            <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
-            <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
+            <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">Comparison card</button>
+            <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">Track A image</button>
+            <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">Track B image</button>
           </div></details>
         </div>
 

@@ -283,6 +283,7 @@ export default function App() {
       case 'continent': sorted.sort((a, b) => (a.continent || '').localeCompare(b.continent || '') || a.name.localeCompare(b.name)); break;
       default: sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
+    if (collection === 'recent') sorted.sort((a,b) => recentIds.indexOf(a.id)-recentIds.indexOf(b.id));
     return sorted;
   }, [query, filterContinent, sortBy, collection, favoriteIds, recentIds]);
 
@@ -383,6 +384,8 @@ export default function App() {
           onChange={e => setQuery(e.target.value)}
         />
 
+        <details className="lab-sidebar-filters" open={!mode}>
+        <summary>Filter &amp; sort</summary>
         <div className="sidebar-filters">
           <select aria-label="Circuit collection" value={collection} onChange={e => setCollection(e.target.value)}>
             <option value="all">All circuits</option><option value="calendar">2026 announced calendar</option><option value="archive">Other circuits</option><option value="favorites">Favorites</option><option value="recent">Recently viewed</option>
@@ -394,6 +397,7 @@ export default function App() {
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
+        </details>
 
         <div className="sidebar-units">
           <button className={unit === 'metric' ? 'active' : ''} onClick={() => setUnit('metric')}>km / m</button>
