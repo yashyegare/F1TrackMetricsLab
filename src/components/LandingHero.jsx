@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../store';
 import circuits from '../data/circuits.json';
+import CircuitOutline from './CircuitOutline.jsx';
 
 const features = [
   { icon: '🗺️', title: 'Interactive Map', desc: 'Leaflet-powered map with animated lap marker, street/satellite toggle, and circuit info panel', color: '#e10600' },
@@ -13,7 +14,7 @@ const features = [
 
 const stats = [
   { value: String(circuits.length), label: 'Circuits' },
-  { value: '24', label: 'Countries' },
+  { value: String(new Set(circuits.map(c => c.id.slice(0,2))).size), label: 'Countries' },
   { value: '2023+', label: 'Telemetry' },
   { value: '3', label: 'View Modes' },
 ];
@@ -28,10 +29,9 @@ const techStack = [
 ];
 
 const shortcuts = [
-  { keys: '⌘ K', action: 'Command palette' },
+  { keys: 'Ctrl / ⌘ K', action: 'Command palette' },
   { keys: '/', action: 'Search' },
   { keys: '← →', action: 'Navigate' },
-  { keys: '1 2 3', action: 'View mode' },
 ];
 
 export default function LandingHero() {
@@ -39,9 +39,10 @@ export default function LandingHero() {
   const setSelectedId = useStore(s => s.setSelectedId);
   const selectedId = useStore(s => s.selectedId);
   const compareId = useStore(s => s.compareId);
+  const recentIds = useStore(s => s.recentIds);
   const setCompareId = useStore(s => s.setCompareId);
-  const open = (mode) => {
-    const selected = circuits.find(c => c.id === selectedId) || circuits.find(c => c.id === 'us-2012') || circuits[0];
+  const open = (mode, id = selectedId) => {
+    const selected = circuits.find(c => c.id === id) || circuits[0];
     setSelectedId(selected.id);
     if (!compareId || compareId === selected.id) setCompareId(circuits.find(c => c.id !== selected.id).id);
     setMode(mode);
@@ -73,6 +74,18 @@ export default function LandingHero() {
             </button>
           </div>
         </div>
+
+        <ol className="lab-start-guide" aria-label="Getting started">
+          <li><span>01</span> Choose a circuit</li><li><span>02</span> Explore its layout</li><li><span>03</span> Compare tracks or drivers</li>
+        </ol>
+        <section className="lab-quick-start" aria-label="Circuit shortcuts">
+          <div className="lab-resume"><div><span className="lab-eyebrow">CONTINUE EXPLORING</span><strong>{circuits.find(c => c.id === selectedId)?.location || 'Austin'}</strong></div><button onClick={() => open('map')}>Open map →</button></div>
+          <h2>{recentIds.length ? 'Recently viewed' : 'Start with an icon'}</h2>
+          <div className="lab-circuit-shortcuts">{(recentIds.length ? recentIds.slice(0,3) : ['mc-1929','gb-1948','jp-1962']).map(id => {
+            const circuit = circuits.find(c => c.id === id);
+            return circuit ? <button key={id} onClick={() => open('map',id)}><CircuitOutline circuit={circuit} /><span>{circuit.location}<small>{(circuit.length/1000).toFixed(3)} km</small></span><span aria-hidden="true">↗</span></button> : null;
+          })}</div>
+        </section>
 
         {/* Stats bar */}
         <div className="landing-stats">

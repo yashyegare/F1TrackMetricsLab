@@ -23,7 +23,7 @@ vi.mock('@react-three/fiber', () => ({
 
 describe('App', () => {
   beforeEach(() => {
-    useStore.setState({mode:null, selectedId:null, compareId:null, query:'', filterContinent:'All', cmdOpen:false, sidebarOpen:false});
+    useStore.setState({mode:null, selectedId:'us-2012', compareId:'az-2016', query:'', filterContinent:'All', cmdOpen:false, sidebarOpen:false, collection:'all', favoriteIds:[], recentIds:[]});
     try { localStorage.clear(); } catch { Object.keys(localStorage).forEach(k => localStorage.removeItem(k)); }
   });
 

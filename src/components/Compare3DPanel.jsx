@@ -233,6 +233,9 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [primaryError, setPrimaryError] = useState(null);
   const [secondaryError, setSecondaryError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [cameraReset, setCameraReset] = useState(0);
+  const requestVersion = useRef(0);
 
   // Driver picker state
   const [primaryDrivers, setPrimaryDrivers] = useState([]);
@@ -306,6 +309,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
   // Fetch telemetry when mode is enabled
   useEffect(() => {
+    requestVersion.current += 1;
     if (!telemetryMode) {
       setPrimaryTelemetry(null);
       setSecondaryTelemetry(null);
@@ -329,6 +333,14 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
     }
 
     let cancelled = false;
+    setPrimaryTelemetry(null); setSecondaryTelemetry(null);
+    setPrimaryError(null); setSecondaryError(null);
+    setPrimaryDrivers([]); setSecondaryDrivers([]);
+    setPrimaryLoading(false); setSecondaryLoading(false);
+    setPrimaryStints(null); setSecondaryStints(null);
+    setPrimaryPitStops(null); setSecondaryPitStops(null);
+    setPrimaryRaceControl(null); setSecondaryRaceControl(null);
+    setPrimaryWeather(null); setSecondaryWeather(null);
 
     async function fetchSide(side) {
       const circuit = side === 'primary' ? primary : secondary;
@@ -380,6 +392,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               getRaceControl(raceKey),
               getWeather(raceKey),
             ]).then(results => results.map(r => r.status === 'fulfilled' ? r.value : null));
+            if (cancelled) return;
 
             if (isPrimary) {
               setPrimaryStints(stintsData);
@@ -400,7 +413,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         console.warn('Telemetry fetch failed for', circuit.id, e);
         if (!cancelled) {
           const setError = isPrimary ? setPrimaryError : setSecondaryError;
-          setError(e.message || 'Telemetry unavailable for this session');
+          setError('No qualifying lap could be loaded for this year. Try another year or retry the connection.');
         }
       }
       if (!cancelled) { setLoading(false); setLoadStep(''); }
@@ -408,14 +421,16 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
     // Fetch both sides in parallel
     Promise.allSettled([fetchSide('primary'), fetchSide('secondary')]);
-    return () => { cancelled = true; };
-  }, [telemetryMode, telemetryYear, primary.id, secondary.id, primary.coordinates, secondary.coordinates]);
+    return () => { cancelled = true; requestVersion.current += 1; };
+  }, [telemetryMode, telemetryYear, primary.id, secondary.id, primary.coordinates, secondary.coordinates, retryCount]);
 
   // Handle driver selection change
   const handleDriverChange = useCallback(async (side, driverNumber) => {
+    const version = requestVersion.current;
     const setDriver = side === 'primary' ? setPrimaryDriver : setSecondaryDriver;
     const setData = side === 'primary' ? setPrimaryTelemetry : setSecondaryTelemetry;
     const setLoading = side === 'primary' ? setPrimaryLoading : setSecondaryLoading;
+    const setError = side === 'primary' ? setPrimaryError : setSecondaryError;
     const qualiDataRef = side === 'primary' ? primaryQualiData : secondaryQualiData;
     const circuit = side === 'primary' ? primary : secondary;
     const coords = side === 'primary' ? primary.coordinates : secondary.coordinates;
@@ -424,16 +439,19 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
     if (!qualiDataRef.current || !driverNumber) return;
 
     setLoading(true);
+    setData(null); setError(null);
     try {
       const data = await fetchDriverTelemetry(circuit.id, telemetryYear, qualiDataRef.current, driverNumber);
+      if (version !== requestVersion.current) return;
       if (data) {
         const { projected, binned } = getCachedProjection(circuit.id, telemetryYear, coords, data.telemetry);
         setData({ ...data, binned, projected });
       }
     } catch (e) {
       console.warn('Driver telemetry fetch failed', e);
+      if (version === requestVersion.current) setError('This driver’s lap could not be loaded. Try another driver or retry.');
     }
-    setLoading(false);
+    if (version === requestVersion.current) setLoading(false);
   }, [telemetryYear, primary, secondary]);
 
   const handleScreenshot = useCallback((name) => {
@@ -557,8 +575,9 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         </div>
 
         <div className="compare3d-toolbar">
+          <button className="anim-btn" onClick={() => { sharedCameraRef.current = { position:null, target:null, _instanceId:null, _targetId:null }; setCameraReset(n => n+1); }}>Reset camera</button>
           <div className="anim-controls">
-            <span className="toolbar-label">Animate</span>
+            <span className="toolbar-label">Playback</span>
             <button className={`anim-btn${animSpeed === 0 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0); setAnimPaused(false); }}>Off</button>
             <button className={`anim-btn${animSpeed === 0.5 ? ' active' : ''}`} onClick={() => { setAnimSpeed(0.5); setAnimPaused(false); }}>0.5×</button>
             <button className={`anim-btn${animSpeed === 1 ? ' active' : ''}`} onClick={() => { setAnimSpeed(1); setAnimPaused(false); }}>1×</button>
@@ -577,11 +596,12 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               className={`anim-btn${telemetryMode ? ' active telemetry-active' : ''}`}
               aria-pressed={telemetryMode}
               onClick={() => setTelemetryMode(t => !t)}
-              title="Toggle real telemetry data from OpenF1 (2023+ circuits only)"
+              disabled={!telemetryMode && !primaryHasTelemetry && !secondaryHasTelemetry}
+              title="Load historical qualifying laps from OpenF1"
             >
-              {telemetryMode ? '⚡ Race Pace' : 'Race Pace'}
+              Qualifying telemetry
             </button>
-            {telemetryMode && (
+            {(
               <select
                 className="telemetry-year-select"
                 aria-label="Telemetry session year"
@@ -603,11 +623,18 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
           <div className="toolbar-separator" />
 
-          <div className="screenshot-controls">
+          <details className="lab-export"><summary>Export</summary><div className="screenshot-controls">
             <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">🔗 Share Card</button>
             <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">📷 A</button>
             <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">📷 B</button>
-          </div>
+          </div></details>
+        </div>
+
+        <div className="lab-session-status" role="status">
+          <strong>Qualifying · {telemetryYear} · OpenF1</strong>
+          <span>{primary.location}: {primaryHasTelemetry ? 'session lookup supported' : 'not covered'} · {secondary.location}: {secondaryHasTelemetry ? 'session lookup supported' : 'not covered'}</span>
+          <small>Coverage does not guarantee a recorded lap for this year. Driver menus appear after loading. Race context is shown separately.</small>
+          {telemetryMode && (primaryError || secondaryError) && <button className="anim-btn" onClick={() => setRetryCount(n => n+1)}>Retry telemetry</button>}
         </div>
 
         {/* Driver pickers + Weather — only in Side-by-Side mode */}
@@ -619,6 +646,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
                   <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
                   <select
                     className="driver-picker-select"
+                    aria-label="Track A driver"
+                    disabled={primaryLoading}
                     value={primaryDriver ?? ''}
                     onChange={e => handleDriverChange('primary', Number(e.target.value) || null)}
                   >
@@ -632,7 +661,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               ) : primaryHasTelemetry ? (
                 <div className="driver-picker-group">
                   <label className="driver-picker-label" style={{ color: '#e10600' }}>Track A Driver</label>
-                  <span className="driver-picker-unavailable">Loading drivers…</span>
+                  <span className="driver-picker-unavailable">{primaryLoading ? 'Loading drivers…' : 'No drivers available for this session'}</span>
                 </div>
               ) : (
                 <div className="driver-picker-group">
@@ -645,6 +674,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
                   <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
                   <select
                     className="driver-picker-select"
+                    aria-label="Track B driver"
+                    disabled={secondaryLoading}
                     value={secondaryDriver ?? ''}
                     onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
                   >
@@ -658,7 +689,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               ) : secondaryHasTelemetry ? (
                 <div className="driver-picker-group">
                   <label className="driver-picker-label" style={{ color: '#00a3ff' }}>Track B Driver</label>
-                  <span className="driver-picker-unavailable">Loading drivers…</span>
+                  <span className="driver-picker-unavailable">{secondaryLoading ? 'Loading drivers…' : 'No drivers available for this session'}</span>
                 </div>
               ) : (
                 <div className="driver-picker-group">
@@ -679,6 +710,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         {viewMode === 'sidebyside' ? (
           <div className="compare3d-panel">
             <StatCard
+              key={`A-${cameraReset}`}
               circuit={primary} detail={primaryDetail} color="#e10600" unit={unit}
               sharedCameraRef={sharedCameraRef} instanceId="A"
               animSpeed={animSpeed} animPaused={animPaused}
@@ -687,6 +719,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
               sharedProgressRef={sharedProgressRef}
             />
             <StatCard
+              key={`B-${cameraReset}`}
               circuit={secondary} detail={secondaryDetail} color="#00a3ff" unit={unit}
               sharedCameraRef={sharedCameraRef} instanceId="B"
               animSpeed={animSpeed} animPaused={animPaused}
@@ -698,6 +731,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
         ) : (
           <Suspense fallback={<div className="loading-3d">Loading overlay…</div>}>
             <Overlay3DPanel
+              key={cameraReset}
               primary={primary}
               secondary={secondary}
               primaryDetail={primaryDetail}

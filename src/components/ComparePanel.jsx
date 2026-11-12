@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { projectToLocalMeters, boundingSize } from '../utils/geometry';
 import { detectStraights } from '../utils/drsDetect';
+import { getTrackDetail } from '../utils/track3d';
 
 const CARD_SIZE = 320;
 const PADDING = 28;
@@ -198,6 +199,8 @@ function TrackCard({ circuit, color, unit }) {
 }
 
 export default function ComparePanel({ primary, secondary, unit = 'metric' }) {
+  const cornersA = useMemo(() => getTrackDetail(primary).corners.length,[primary]);
+  const cornersB = useMemo(() => getTrackDetail(secondary).corners.length,[secondary]);
   const lengthDiff =
     primary.length && secondary.length
       ? Math.abs(primary.length - secondary.length)
@@ -205,6 +208,7 @@ export default function ComparePanel({ primary, secondary, unit = 'metric' }) {
 
   return (
     <div className="compare-wrapper">
+      <div className="lab-comparison-summary" aria-label="Comparison highlights"><strong>{primary.location} vs {secondary.location}</strong><span>{lengthDiff ? `${primary.length > secondary.length ? primary.location : secondary.location} is ${formatLen(lengthDiff,unit)} longer` : 'Same recorded length'}</span><span>{cornersA} vs {cornersB} inferred corners</span><small>Each outline fits its own card; visual sizes are normalized.</small></div>
       <div className="compare-panel">
         <TrackCard circuit={primary} color="#e10600" unit={unit} />
         <div className="compare-vs">

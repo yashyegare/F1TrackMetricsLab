@@ -5,6 +5,8 @@ import LapAnimation from './components/LapAnimation.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
 import LandingHero from './components/LandingHero.jsx';
+import CircuitOutline from './components/CircuitOutline.jsx';
+import { calendar2026, countryFlag } from './data/discovery';
 import { useStore } from './store';
 import { getTrackDetail } from './utils/track3d';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -226,6 +228,12 @@ export default function App() {
   const setFilterContinent = useStore(s => s.setFilterContinent);
   const setSortBy = useStore(s => s.setSortBy);
   const selectCircuit = useStore(s => s.selectCircuit);
+  const collection = useStore(s => s.collection);
+  const setCollection = useStore(s => s.setCollection);
+  const favoriteIds = useStore(s => s.favoriteIds);
+  const recentIds = useStore(s => s.recentIds);
+  const toggleFavorite = useStore(s => s.toggleFavorite);
+  const swapCircuits = useStore(s => s.swapCircuits);
   useEffect(() => {
     if (!sidebarOpen || window.innerWidth > 768) return;
     // Wait until the drawer's visible styles have been applied before focusing.
@@ -260,6 +268,10 @@ export default function App() {
   // --- Filter + sort ---
   const filtered = useMemo(() => {
     let list = circuits;
+    if (collection === 'favorites') list = list.filter(c => favoriteIds.includes(c.id));
+    if (collection === 'recent') list = list.filter(c => recentIds.includes(c.id));
+    if (collection === 'calendar') list = list.filter(c => calendar2026.has(c.id));
+    if (collection === 'archive') list = list.filter(c => !calendar2026.has(c.id));
     const q = query.trim().toLowerCase();
     if (q) list = list.filter(c => c.location?.toLowerCase().includes(q) || c.name?.toLowerCase().includes(q));
     if (filterContinent !== 'All') list = list.filter(c => c.continent === filterContinent);
@@ -272,7 +284,7 @@ export default function App() {
       default: sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
     return sorted;
-  }, [query, filterContinent, sortBy]);
+  }, [query, filterContinent, sortBy, collection, favoriteIds, recentIds]);
 
   // --- Keyboard shortcuts ---
   useEffect(() => {
@@ -354,9 +366,10 @@ export default function App() {
               <span className="dot" style={{ background: '#00a3ff' }} />
               Circuit B
               <select value={compareId} onChange={e => setCompareId(e.target.value)}>
-                {circuits.map(c => <option key={c.id} value={c.id}>{c.location} — {c.name}</option>)}
+                {circuits.map(c => <option key={c.id} value={c.id} disabled={c.id === selectedId}>{c.location} — {c.name}</option>)}
               </select>
             </label>
+            <button className="lab-swap" onClick={swapCircuits} aria-label="Swap circuits">⇅ Swap circuits</button>
           </div>
         )}
 
@@ -371,6 +384,9 @@ export default function App() {
         />
 
         <div className="sidebar-filters">
+          <select aria-label="Circuit collection" value={collection} onChange={e => setCollection(e.target.value)}>
+            <option value="all">All circuits</option><option value="calendar">2026 announced calendar</option><option value="archive">Other circuits</option><option value="favorites">Favorites</option><option value="recent">Recently viewed</option>
+          </select>
           <select aria-label="Filter by continent" value={filterContinent} onChange={e => setFilterContinent(e.target.value)}>
             {CONTINENTS.map(c => <option key={c} value={c}>{c === 'All' ? 'All continents' : c}</option>)}
           </select>
@@ -385,14 +401,17 @@ export default function App() {
         </div>
 
         <div className="sidebar-list-header" role="status">Circuits · {filtered.length}</div>
-        {filtered.length === 0 && <div className="lab-search-empty"><strong>No matching circuits</strong><p>Try another circuit, city, or continent.</p><button onClick={() => {setQuery(''); setFilterContinent('All'); searchRef.current?.focus();}}>Clear filters</button></div>}
+        {collection === 'calendar' && <p className="lab-filter-note">Announced calendar · <a href="https://api.fia.com/news/fia-and-formula-1-announce-2026-calendar" target="_blank" rel="noreferrer">FIA source</a>. Schedule changes may apply.</p>}
+        {filtered.length === 0 && <div className="lab-search-empty"><strong>No matching circuits</strong><p>{collection === 'favorites' ? 'Save tracks with the star beside each circuit.' : 'Try another circuit, city, or collection.'}</p><button onClick={() => {setQuery(''); setFilterContinent('All'); setCollection('all'); searchRef.current?.focus();}}>Clear filters</button></div>}
         <ul className="circuit-list">
           {filtered.map(c => (
             <li key={c.id}>
               <button aria-pressed={c.id === selectedId} className={c.id === selectedId ? 'active' : ''} onClick={() => selectCircuit(c.id)}>
-                <span className="circuit-name">{c.name}</span>
+                <CircuitOutline circuit={c} />
+                <span className="circuit-name"><span aria-hidden="true">{countryFlag(c.id)} </span>{c.name}</span>
                 <span className="circuit-location">{c.location}{sortBy === 'continent' ? ` · ${c.continent}` : ''}</span>
               </button>
+              <button className="lab-favorite" aria-label={`Favorite ${c.location}`} aria-pressed={favoriteIds.includes(c.id)} onClick={() => toggleFavorite(c.id)}>{favoriteIds.includes(c.id) ? '★' : '☆'}</button>
             </li>
           ))}
         </ul>
@@ -464,7 +483,7 @@ export default function App() {
         ) : mode === 'compare' ? (
           <ComparePanel primary={selected} secondary={compareCircuit} unit={unit} />
         ) : (
-          <ErrorBoundary fallback={<ComparePanel primary={selected} secondary={compareCircuit} unit={unit} />}>
+          <ErrorBoundary key={`${selected.id}-${compareCircuit.id}`}>
             <Suspense fallback={<div className="loading-3d">Loading 3D view…</div>}>
               <Compare3DPanel primary={selected} secondary={compareCircuit} unit={unit} initialTelemetry={initialTelemetry} />
             </Suspense>

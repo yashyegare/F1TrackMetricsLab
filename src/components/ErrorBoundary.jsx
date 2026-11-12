@@ -1,4 +1,10 @@
 import React from 'react';
+import { useStore } from '../store';
+
+function RecoveryActions() {
+  const setMode = useStore(s => s.setMode);
+  return <div className="lab-recovery"><button onClick={() => setMode('compare')}>Open 2D comparison</button><button onClick={() => setMode('map')}>Open map</button></div>;
+}
 
 /**
  * Detect WebGL support. Returns true if a WebGL context can be created.
@@ -110,6 +116,7 @@ export default class ErrorBoundary extends React.Component {
           Your browser doesn't support WebGL, which is required for 3D views.
           Switch to <strong>2D Compare</strong> or <strong>Map</strong> mode instead.
         </p>
+        <RecoveryActions />
       </div>
     );
   }
@@ -151,6 +158,7 @@ export default class ErrorBoundary extends React.Component {
             Try 3D again
           </button>
         )}
+        <RecoveryActions />
       </div>
     );
   }

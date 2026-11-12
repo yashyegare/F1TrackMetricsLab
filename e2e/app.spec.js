@@ -1,6 +1,29 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('F1 Track Metrics Lab', () => {
+  test('saves favorites across reload and filters the collection', async ({page}) => {
+    await page.goto('/');
+    await page.getByRole('button',{name:'Favorite Monaco',exact:true}).click();
+    await page.reload();
+    await page.getByRole('combobox',{name:'Circuit collection'}).selectOption('favorites');
+    await expect(page.getByRole('button',{name:'Favorite Monaco',exact:true})).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('.circuit-list li')).toHaveCount(1);
+    await page.getByRole('button',{name:'Favorite Monaco',exact:true}).click();
+    await expect(page.getByText('No matching circuits')).toBeVisible();
+    await page.getByRole('button',{name:'Clear filters'}).click();
+    await expect(page.locator('.circuit-list li')).toHaveCount(40);
+  });
+  test('swaps comparison selections and shows the summary', async ({page}) => {
+    await page.goto('/');
+    await page.getByRole('button',{name:'Compare',exact:true}).click();
+    const a = page.getByRole('combobox',{name:'Circuit A'});
+    const b = page.getByRole('combobox',{name:'Circuit B'});
+    const beforeA = await a.inputValue(), beforeB = await b.inputValue();
+    await page.getByRole('button',{name:'Swap circuits'}).click();
+    await expect(a).toHaveValue(beforeB);
+    await expect(b).toHaveValue(beforeA);
+    await expect(page.getByLabel('Comparison highlights')).toBeVisible();
+  });
   test('recovers from an empty circuit search', async ({ page }) => {
     await page.goto('/');
     await page.getByRole('textbox', {name:'Search circuits or cities'}).fill('no-such-circuit');
