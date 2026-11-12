@@ -313,6 +313,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   useEffect(() => {
     requestVersion.current += 1;
     if (!telemetryMode) {
+      setPrimaryLoading(false); setSecondaryLoading(false);
+      setPrimaryLoadStep(''); setSecondaryLoadStep('');
       setPrimaryTelemetry(null);
       setSecondaryTelemetry(null);
       setPrimaryDrivers([]);
@@ -634,8 +636,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
         <div className="lab-session-status" role="status">
           <strong>Qualifying · {telemetryYear} · OpenF1</strong>
-          <span>{primary.location}: {primaryHasTelemetry ? 'session lookup supported' : 'not covered'} · {secondary.location}: {secondaryHasTelemetry ? 'session lookup supported' : 'not covered'}</span>
-          <small>Coverage does not guarantee a recorded lap for this year. Driver menus appear after loading. Race context is shown separately.</small>
+          <span>{primary.location}: {primaryHasTelemetry ? 'historical coverage' : 'not covered'} · {secondary.location}: {secondaryHasTelemetry ? 'historical coverage' : 'not covered'}</span>
+          <small>Choose a year, then load qualifying telemetry. Some sessions or laps may be unavailable. Driver menus appear after loading; race context is shown separately.</small>
           {telemetryMode && (primaryError || secondaryError) && <button className="anim-btn" onClick={() => setRetryCount(n => n+1)}>Retry telemetry</button>}
         </div>
 
