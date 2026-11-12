@@ -313,7 +313,7 @@ export default function App() {
 
   const handleCmdSelect = useCallback((id) => {
     setSelectedId(id);
-    if (mode === 'map') setMode('compare3d');
+    if (!mode) setMode('map');
   }, [mode, setSelectedId, setMode]);
 
   return (

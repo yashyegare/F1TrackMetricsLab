@@ -84,6 +84,6 @@ export const useStore = create((set, _get) => {
     toggleCmdOpen: () => set((s) => ({ cmdOpen: !s.cmdOpen })),
 
     // Compound actions
-    selectCircuit: (id) => { _get().setSelectedId(id); set({sidebarOpen:false}); },
+    selectCircuit: (id) => { if (!validId(id)) return; _get().setSelectedId(id); if (!_get().mode) _get().setMode('map'); set({sidebarOpen:false}); },
   };
 });

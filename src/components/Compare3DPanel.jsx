@@ -629,8 +629,8 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
 
           <details className="lab-export"><summary>Export</summary><div className="screenshot-controls">
             <button className="anim-btn" onClick={handleShareCard} title="Download branded comparison card for social sharing">Comparison card</button>
-            <button className="anim-btn" onClick={() => handleScreenshot('A')} title="Screenshot Track A">Track A image</button>
-            <button className="anim-btn" onClick={() => handleScreenshot('B')} title="Screenshot Track B">Track B image</button>
+            <button className="anim-btn" disabled={viewMode !== 'sidebyside'} onClick={() => handleScreenshot('A')} title="Available in Side by Side view">Track A image</button>
+            <button className="anim-btn" disabled={viewMode !== 'sidebyside'} onClick={() => handleScreenshot('B')} title="Available in Side by Side view">Track B image</button>
           </div></details>
         </div>
 
