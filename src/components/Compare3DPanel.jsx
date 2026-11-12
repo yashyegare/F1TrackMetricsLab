@@ -140,6 +140,14 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const [primaryChoice,setPrimaryChoice] = useState(initialTelemetry?.driverA ?? null);
   const [secondaryChoice,setSecondaryChoice] = useState(initialTelemetry?.driverB ?? null);
   const [cameraReset,setCameraReset] = useState(0);
+  const [rendererError,setRendererError] = useState(false);
+  const workspaceRef = useRef(null);
+  useEffect(() => {
+    const root=workspaceRef.current;
+    const lost=event => {event.preventDefault();setRendererError(true);};
+    root?.addEventListener('webglcontextlost',lost,true);
+    return () => root?.removeEventListener('webglcontextlost',lost,true);
+  },[rendererError]);
   const a = useTelemetryForCircuit(primary,telemetryYear,{enabled:telemetryEnabled,driverNumber:primaryChoice});
   const b = useTelemetryForCircuit(secondary,telemetryYear,{enabled:telemetryEnabled,driverNumber:secondaryChoice,rank:driverMode?1:0,excludeDriver:driverMode?a.driver:null});
   const primaryTelemetry=a.telemetry, secondaryTelemetry=b.telemetry;
@@ -291,9 +299,11 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
   const primaryHasTelemetry = isTelemetryAvailable(primary.id);
   const secondaryHasTelemetry = isTelemetryAvailable(secondary.id);
 
+  if (rendererError) return <section className="loading-3d" role="alert"><h2>3D view interrupted</h2><p>The graphics context was lost. Your selections are preserved.</p><div className="lab-recovery"><button onClick={() => setRendererError(false)}>Retry 3D view</button><button onClick={() => useStore.getState().setMode('map')}>Open map</button><button onClick={() => useStore.getState().setMode('compare')}>Open 2D comparison</button></div></section>;
+
   return (
     <div className="compare3d-wrapper">
-      <div className="compare3d-inner">
+      <div className="compare3d-inner" ref={workspaceRef}>
         <div className="lab-analysis-toggle" aria-label="Analysis mode"><button aria-pressed={!driverMode} onClick={() => setAnalysisMode('tracks')}>Compare tracks</button><button aria-pressed={driverMode} onClick={() => setAnalysisMode('drivers')}>Compare drivers</button></div>
         <p className="lab-analysis-help">{driverMode ? 'Same circuit and qualifying session. Pick two different drivers to examine where time was gained.' : 'Compare track geometry. Cross-track replay is illustrative; it does not measure driver performance.'}</p>
         <div className="compare3d-mode-toggle">
@@ -420,7 +430,7 @@ export default function Compare3DPanel({ primary, secondary, unit = 'metric', in
                     onChange={e => handleDriverChange('secondary', Number(e.target.value) || null)}
                   >
                     {secondaryDrivers.map(d => (
-                      <option key={d.driver_number} value={d.driver_number}>
+                      <option key={d.driver_number} value={d.driver_number} disabled={driverMode && d.driver_number === primaryDriver}>
                         {d.full_name} {d.team_name ? `(${d.team_name})` : ''}
                       </option>
                     ))}

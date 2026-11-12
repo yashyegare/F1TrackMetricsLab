@@ -7,10 +7,13 @@ import * as THREE from 'three';
 
 const ribbonCache = new Map();   // id → BufferGeometry
 const edgeCache = new Map();     // id → { left, right }
+const identities = new WeakMap();
+let nextIdentity = 0;
+function identity(value) { if (!identities.has(value)) identities.set(value,++nextIdentity); return identities.get(value); }
 
 // Offset edges (same algorithm as in Track3D / Overlay3DPanel but cached).
 export function getCachedEdges(circuitId, points, width) {
-  const key = `${circuitId}_w${width.toFixed(2)}`;
+  const key = `${circuitId}_p${identity(points)}_w${width}`;
   if (edgeCache.has(key)) return edgeCache.get(key);
 
   const n = points.length;
@@ -34,6 +37,7 @@ export function getCachedEdges(circuitId, points, width) {
 
   const edges = { left, right };
   edgeCache.set(key, edges);
+  if (edgeCache.size > 128) edgeCache.delete(edgeCache.keys().next().value);
   return edges;
 }
 
@@ -47,7 +51,7 @@ export function getCachedRibbonGeometry(circuitId, points, edges, elevation) {
       elevHash = ((elevHash << 5) - elevHash + elevation[i] * 1000) | 0;
     }
   }
-  const key = `${circuitId}_e${elevHash}`;
+  const key = `${circuitId}_p${identity(points)}_edges${identity(edges)}_e${elevHash}`;
   if (ribbonCache.has(key)) return ribbonCache.get(key);
 
   const { left, right } = edges;
@@ -71,6 +75,10 @@ export function getCachedRibbonGeometry(circuitId, points, edges, elevation) {
   geometry.computeVertexNormals();
 
   ribbonCache.set(key, geometry);
+  if (ribbonCache.size > 64) {
+    const oldest=ribbonCache.keys().next().value;
+    ribbonCache.get(oldest).dispose(); ribbonCache.delete(oldest);
+  }
   return geometry;
 }
 

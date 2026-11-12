@@ -39,3 +39,6 @@ Cloud Run's existing main-only job depends on the test/browser gates. This repos
 - Source outlines/archived metadata are not versioned engineering surveys. Calendar metadata requires deliberate source-backed updates.
 - Tests exercise recorded contract samples and synthetic browser weekends; they do not guarantee every historical API session.
 - Device-level FPS, full Core Web Vitals and container-base-image vulnerability scanning are not claimed as completed measurements.
+- Recorded laps are not treated as an official qualifying classification; track-limit adjudication and deleted-lap decisions are not inferred from timing samples.
+
+Scene caches include coordinate/edge identity so normalized overlays cannot reuse a full-scale ribbon for the same circuit. Geometry retention is bounded to 64 entries and old GPU buffers are disposed; edge retention is bounded to 128 entries. Camera animation frames and checker textures are cleaned up when scenes change or unmount.

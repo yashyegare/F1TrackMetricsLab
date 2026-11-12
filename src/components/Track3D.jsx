@@ -340,6 +340,8 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
   const graphics = useGraphicsQuality();
   const { points, corners } = detail;
   const controlsRef = useRef();
+  const zoomFrame = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(zoomFrame.current),[]);
   const { camera } = useThree();
   const prevCircuitRef = useRef(circuitId);
 
@@ -365,18 +367,20 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
     const startPos = camera.position.clone();
     const startTarget = controlsRef.current?.target.clone() || new THREE.Vector3();
     const startTime = performance.now();
-    const duration = 800;
+    const duration = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 0 : 800;
+    let frame = 0;
     function animate() {
-      const t = Math.min((performance.now() - startTime) / duration, 1);
+      const t = duration ? Math.min((performance.now() - startTime) / duration, 1) : 1;
       const ease = 1 - Math.pow(1 - t, 3);
       camera.position.lerpVectors(startPos, targetPos, ease);
       if (controlsRef.current) {
         controlsRef.current.target.lerpVectors(startTarget, targetLook, ease);
         controlsRef.current.update();
       }
-      if (t < 1) requestAnimationFrame(animate);
+      if (t < 1) frame = requestAnimationFrame(animate);
     }
     animate();
+    return () => cancelAnimationFrame(frame);
   }, [circuitId, diag, camera]);
 
   const elevation = useMemo(() => computeElevation(points, corners, altitude), [points, corners, altitude]);
@@ -386,6 +390,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
   const edges = useMemo(() => getCachedEdges(circuitId, points, trackWidth), [circuitId, points, trackWidth]);
   const ribbonGeometry = useMemo(() => getCachedRibbonGeometry(circuitId, points, edges, elevation), [circuitId, points, edges, elevation]);
   const checkerTexture = useMemo(() => makeCheckerTexture(), []);
+  useEffect(() => () => checkerTexture.dispose(),[checkerTexture]);
 
   const leftLoop = useMemo(() => edges.left.map(([x, _y, z], i) => [x, elevation[i] ?? 0, z]), [edges, elevation]);
   const rightLoop = useMemo(() => edges.right.map(([x, _y, z], i) => [x, elevation[i] ?? 0, z]), [edges, elevation]);
@@ -459,6 +464,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
   });
 
   const handleCornerZoom = useCallback((pos) => {
+    cancelAnimationFrame(zoomFrame.current);
     if (controlsRef.current) {
       const cc = controlsRef.current;
       const camDist = diag * 0.35;
@@ -470,7 +476,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
       const startTarget = cc.target.clone();
       let t = 0;
       const animate = () => {
-        t += 0.05;
+        t += window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ? 1 : 0.05;
         if (t >= 1) {
           camera.position.copy(targetPos);
           cc.target.copy(targetLook);
@@ -481,7 +487,7 @@ function TrackScene({ detail, accentColor, altitude, circuitId, drsZones = 0, sh
         camera.position.lerpVectors(startPos, targetPos, ease);
         cc.target.lerpVectors(startTarget, targetLook, ease);
         cc.update();
-        requestAnimationFrame(animate);
+        zoomFrame.current = requestAnimationFrame(animate);
       };
       animate();
     }

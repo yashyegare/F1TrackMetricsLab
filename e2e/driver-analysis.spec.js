@@ -1,5 +1,14 @@
 import {test,expect} from '@playwright/test';
 import {mockQualifying} from './fixtures/qualifying';
+test('recovers from a lost graphics context without silently changing views',async ({page}) => {
+  await page.goto('/?mode=compare3d');
+  const canvas=page.locator('canvas').first();
+  await expect(canvas).toBeVisible({timeout:15000});
+  await canvas.evaluate(element => element.dispatchEvent(new Event('webglcontextlost',{cancelable:true})));
+  await expect(page.getByRole('heading',{name:'3D view interrupted'})).toBeVisible();
+  await page.getByRole('button',{name:'Open 2D comparison',exact:true}).click();
+  await expect(page.getByLabel('Comparison highlights')).toBeVisible();
+});
 test('offers an explicit map recovery when WebGL is unavailable',async ({page}) => {
   await page.addInitScript(() => {
     const original=HTMLCanvasElement.prototype.getContext;
