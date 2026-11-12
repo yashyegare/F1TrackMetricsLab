@@ -1,5 +1,17 @@
 import {test,expect} from '@playwright/test';
 import {mockQualifying} from './fixtures/qualifying';
+test('offers an explicit map recovery when WebGL is unavailable',async ({page}) => {
+  await page.addInitScript(() => {
+    const original=HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext=function(type,...args) {
+      return String(type).includes('webgl') ? null : original.call(this,type,...args);
+    };
+  });
+  await page.goto('/?mode=compare3d');
+  await expect(page.getByRole('heading',{name:'WebGL not available'})).toBeVisible();
+  await page.getByRole('button',{name:'Open map',exact:true}).click();
+  await expect(page.locator('.leaflet-container')).toBeVisible();
+});
 test('compares different drivers in the same session and preserves the deep link',async ({page}) => {
   await mockQualifying(page);
   await page.goto('/?mode=compare3d&analysis=drivers&circuit=us-2012&year=2024');

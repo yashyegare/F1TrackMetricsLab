@@ -167,3 +167,5 @@ button:active:not(:disabled) { transform:translateY(1px); }
 .lab-quality-label { display:flex; align-items:center; gap:8px; font-size:12px; color:#bcbcc7; }
 .lab-quality-label select { min-height:40px; padding:6px; background:#202027; color:#ededf6; border:1px solid #51515c; border-radius:6px; }
 @media(max-width:768px) { .lab-analysis-toggle { width:100%; } .lab-analysis-toggle button { flex:1; padding:10px; font-size:13px; } .lab-driver-insights { padding:16px; } .lab-sector-gains { gap:6px; } .lab-sector-gains > div { padding:10px; } .lab-sector-gains strong { font-size:16px; } }
+/* The analysis already carries data-source notes; avoid covering the charts. */
+.map-area:has(.compare3d-wrapper) > .disclaimer { display:none; }

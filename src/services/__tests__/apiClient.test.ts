@@ -2,6 +2,7 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 const memory = vi.hoisted(() => new Map());
 vi.mock('idb-keyval',() => ({get:vi.fn(async key => memory.get(key)),set:vi.fn(async (key,value) => memory.set(key,value)),del:vi.fn(async key => memory.delete(key)),keys:vi.fn(async () => [...memory.keys()])}));
 import { fetchAPI, cacheKey, oldestFirst } from '../apiClient';
+import { get,set } from 'idb-keyval';
 const rows = [{driver_number:1,full_name:'Driver One'}];
 const response = (body:unknown,status=200,headers={}) => ({ok:status===200,status,json:async () => body,headers:new Headers(headers)});
 describe('validated request lifecycle',() => {
@@ -16,6 +17,13 @@ describe('validated request lifecycle',() => {
   it('rejects malformed and non-array responses',async () => {
     vi.mocked(fetch).mockResolvedValue(response({error:'invalid'}) as Response);
     await expect(fetchAPI('drivers',{session_key:2})).rejects.toThrow('Invalid drivers');
+    expect(memory.size).toBe(0);
+  });
+  it('keeps working when browser storage is unavailable or full',async () => {
+    vi.mocked(get).mockRejectedValueOnce(new Error('Storage disabled'));
+    vi.mocked(set).mockRejectedValueOnce(new Error('Quota exceeded'));
+    vi.mocked(fetch).mockResolvedValue(response(rows) as Response);
+    expect(await fetchAPI('drivers',{session_key:8})).toEqual(rows);
     expect(memory.size).toBe(0);
   });
   it('retries a rate limit after the server delay',async () => {

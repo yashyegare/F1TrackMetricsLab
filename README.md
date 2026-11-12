@@ -41,6 +41,10 @@ Example deep link:
 
 The legacy `racePace` URL flag is retained for existing links; the UI correctly calls the source qualifying telemetry.
 
+![Recorded Austin qualifying comparison with sector differences and sampled traces](public/screenshots/driver-analysis.png)
+
+Captured from the working application with public 2024 Austin qualifying data. This is a real application screenshot, not a design mockup.
+
 ## Data provenance and limits
 
 - Circuit outlines and archived metadata: [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits). An archived lap record or DRS count may belong to an earlier season/layout.

@@ -5,8 +5,8 @@ import {
 } from 'recharts';
 import { calculateTimeDelta, prepareTraceStack } from '../utils/telemetryAnalysis';
 
-const CAR_A_COLOR = '#e10600';
-const CAR_B_COLOR = '#00a3ff';
+const CAR_A_COLOR = '#ff6259';
+const CAR_B_COLOR = '#53b9ff';
 
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
@@ -64,7 +64,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
 
   if (!primaryProjected?.length && !secondaryProjected?.length) return null;
 
-  const tickStyle = { fontSize: 9, fill: '#6a6a70' };
+  const tickStyle = { fontSize: 10, fill: '#aaaab8' };
 
   return (
     <div className="telemetry-scrubber">
@@ -83,7 +83,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
           {/* Lane 1: Speed Trace — both drivers */}
           <div className="scrubber-lane">
             <div className="scrubber-lane-header">
-              <span className="scrubber-lane-title">Speed</span>
+              <span className="scrubber-lane-title">Speed (km/h)</span>
               <span className="scrubber-legend">
                 <span style={{ color: CAR_A_COLOR }}>● {nameA}</span>
                 <span style={{ color: CAR_B_COLOR }}>● {nameB}</span>
@@ -93,7 +93,7 @@ export default function TelemetryScrubber({ primaryProjected, secondaryProjected
               <LineChart data={speedTrace} onMouseMove={handleScrub} onMouseLeave={handleLeave} syncId="telemetrySync">
                 <CartesianGrid strokeDasharray="3 3" stroke="#2c2c31" />
                 <XAxis dataKey="distance" tick={tickStyle} interval={99} />
-                <YAxis tick={tickStyle} width={40} unit=" km/h" />
+                <YAxis tick={tickStyle} width={40} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line type="monotone" dataKey="carA" stroke={CAR_A_COLOR} dot={false} strokeWidth={1.5} name={nameA} />
                 <Line type="monotone" dataKey="carB" stroke={CAR_B_COLOR} dot={false} strokeWidth={1.5} name={nameB} />
